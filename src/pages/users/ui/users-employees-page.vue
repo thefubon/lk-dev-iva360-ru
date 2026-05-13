@@ -2110,18 +2110,17 @@ watch(bulkMassPlaceholderOpen, (open) => {
                             @update:model-value="(v) => { employeeSubscriptionProductFilters[row.product].filterActive = !!v }"
                           />
                           <span
-                            class="flex size-9 shrink-0 items-center justify-center rounded-md text-white"
+                            class="flex size-8 shrink-0 items-center justify-center rounded-md text-white"
                             :class="subscriptionProductChipClass[row.product]"
                           >
                             <img
                               :src="productIconUrls[row.iconKey]"
                               :alt="''"
-                              class="size-5"
-                              width="20"
-                              height="20"
+                              class="size-7 object-contain select-none"
                               loading="lazy"
                               decoding="async"
-                            >
+                              draggable="false"
+                            />
                           </span>
                           <span class="text-foreground min-w-0 text-xs font-medium leading-tight">{{ row.label }}</span>
                         </div>
