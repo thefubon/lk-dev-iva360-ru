@@ -1,75 +1,90 @@
-# Nuxt Minimal Starter
+# IWA 360 - Личный кабинет
 
-Look at the [Nuxt documentation](https://nuxt.com/docs/getting-started/introduction) to learn more.
+Современный личный кабинет на базе Nuxt 4 с архитектурой Feature-Sliced Design.
 
-## Setup
+## Технологический стек
 
-Make sure to install dependencies:
+- **Framework**: Nuxt 4.4.5, Vue 3.5.34
+- **Language**: TypeScript 6.0.3
+- **Styling**: Tailwind CSS 4.3.0
+- **UI Components**: shadcn-nuxt, Reka UI, Lucide Icons
+- **Forms**: Vee-validate + Zod
+- **Tables**: TanStack Vue Table
+- **Testing**: Vitest (unit, nuxt, e2e)
+- **Linting**: ESLint
+
+## Архитектура
+
+Проект использует Feature-Sliced Design (FSD):
+
+```
+src/
+├── app/          # Слой приложения (routes, layouts, plugins, assets)
+├── entities/     # Бизнес-сущности
+├── features/     # Фичи
+├── pages/        # Страницы
+├── shared/       # Общий код (ui, lib)
+└── widgets/      # Виджеты
+```
+
+## Установка
 
 ```bash
-# npm
-npm install
-
-# pnpm
+# Установить зависимости
 pnpm install
 
-# yarn
-yarn install
-
-# bun
-bun install
+# Создать .env файл на основе .env.example
+cp .env.example .env
 ```
 
-## Development Server
-
-Start the development server on `http://localhost:3000`:
+## Разработка
 
 ```bash
-# npm
-npm run dev
-
-# pnpm
+# Запустить dev сервер
 pnpm dev
 
-# yarn
-yarn dev
+# Типизация
+pnpm typecheck
 
-# bun
-bun run dev
+# Линтинг
+pnpm lint
+
+# Тесты
+pnpm test              # все тесты
+pnpm test:unit         # unit тесты
+pnpm test:nuxt         # nuxt тесты
+pnpm test:e2e          # e2e тесты
+pnpm test:coverage     # с покрытием
 ```
 
-## Production
-
-Build the application for production:
+## Сборка
 
 ```bash
-# npm
-npm run build
-
-# pnpm
+# Production build
 pnpm build
 
-# yarn
-yarn build
-
-# bun
-bun run build
-```
-
-Locally preview production build:
-
-```bash
-# npm
-npm run preview
-
-# pnpm
+# Preview production build
 pnpm preview
-
-# yarn
-yarn preview
-
-# bun
-bun run preview
 ```
 
-Check out the [deployment documentation](https://nuxt.com/docs/getting-started/deployment) for more information.
+## Скрипты
+
+- `pnpm verify` - полная проверка (lint, typecheck, build, test)
+- `pnpm verify:quick` - быстрая проверка без билда
+- `pnpm lint:fix` - исправить ошибки линтинга
+- `pnpm format` - форматировать код с Prettier
+- `pnpm format:check` - проверить форматирование
+
+## Git Hooks
+
+Проект использует Husky для Git hooks:
+- **pre-commit**: запускает lint-staged для проверки и форматирования измененных файлов
+- **commit-msg**: проверяет сообщения коммитов с помощью Commitlint
+
+## CI/CD
+
+GitHub Actions настроен для автоматической проверки:
+- Линтинг и форматирование
+- Типизация
+- Тесты с покрытием
+- Сборка проекта

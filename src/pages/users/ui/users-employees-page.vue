@@ -1697,6 +1697,7 @@ const connectProductsSelectAllModel = computed({
         toast.warning('Часть подписок не выбрана: нет свободных мест по лимиту подключений.')
       }
     } else {
+      // Снять выделение со всех элементов в списке
       const drop = new Set(codes)
       connectProductsSelectedCodes.value = connectProductsSelectedCodes.value.filter(
         (c) => !drop.has(c),
