@@ -21,8 +21,6 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
-  Briefcase,
-  Building2,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -37,7 +35,6 @@ import {
   Pencil,
   Plus,
   Search,
-  Tags,
   TrendingUp,
   Upload,
   User,
@@ -54,12 +51,14 @@ import {
   DialogTitle,
 } from 'reka-ui'
 import { computed, h, nextTick, onMounted, reactive, ref, watch } from 'vue'
+import { toast } from 'vue-sonner'
 import { useResizeObserver, watchDebounced } from '@vueuse/core'
 import { Button } from '@/shared/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Input } from '@/shared/ui/input'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
+import { RadioGroup, RadioGroupItem } from '@/shared/ui/radio-group'
 import { ScrollArea } from '@/shared/ui/scroll-area'
 import {
   Select,
@@ -88,6 +87,7 @@ import {
 import { Switch } from '@/shared/ui/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 import { cn } from '@lib/utils'
+import EmployeeTagsCell from '@/pages/users/ui/employee-tags-cell.vue'
 import {
   productIconUrls,
   productIconUrlsDefault,
@@ -112,8 +112,8 @@ function isNarrowColumn(id: string) {
   return id === 'subscriptions' || id === 'actions'
 }
 
-/** Отдел, должность, тег — одна ширина; «Подписки» отдельно, уже по ширине. */
-const EMPLOYEE_TABLE_EQUAL_WIDTH_COLUMN_IDS = new Set<string>(['department', 'position', 'tags'])
+/** Отдел и должность — одна ширина; «Тег» уже, «Подписки» отдельно. */
+const EMPLOYEE_TABLE_EQUAL_WIDTH_COLUMN_IDS = new Set<string>(['department', 'position'])
 
 function isEmployeeTableEqualWidthColumn(id: string) {
   return EMPLOYEE_TABLE_EQUAL_WIDTH_COLUMN_IDS.has(id)
@@ -163,28 +163,30 @@ const addUserPlanIconBgClass: Record<ProductIconKey, string> = {
   'ai-assistent': 'bg-ai-secondary',
 }
 
-/** Демо-каталог тарифов для формы «Добавить вручную»: код (SKU) + иконка и цвет бейджа. */
+/** Демо-каталог тарифов: код (SKU), иконка, лимит подключений пользователей (как в Figma). */
 const ADD_USER_PLAN_CATALOG: {
   code: string
   chip: SubscriptionSidebarProductKey
   icon: ProductIconKey
+  connectionsUsed: number
+  connectionsLimit: number
 }[] = [
-  { code: 'MEET-10', chip: 'meetings', icon: 'meetings' },
-  { code: 'MEET-25', chip: 'meetings', icon: 'meetings' },
-  { code: 'MEET-50', chip: 'meetings', icon: 'meetings' },
-  { code: 'MEET-100', chip: 'meetings', icon: 'meetings' },
-  { code: 'WEB-25', chip: 'meetings', icon: 'webinars' },
-  { code: 'WEB-100', chip: 'meetings', icon: 'webinars' },
-  { code: 'WEB-150', chip: 'meetings', icon: 'webinars' },
-  { code: 'MESSENGER+', chip: 'messenger', icon: 'messenger' },
-  { code: 'MSG-PRO', chip: 'messenger', icon: 'messenger' },
-  { code: 'DRIVE-10', chip: 'drive', icon: 'drive' },
-  { code: 'DRIVE-25', chip: 'drive', icon: 'drive' },
-  { code: 'DRIVE-50', chip: 'drive', icon: 'drive' },
-  { code: 'MAIL-5', chip: 'mail', icon: 'mail' },
-  { code: 'MAIL-25', chip: 'mail', icon: 'mail' },
-  { code: 'BRD-01', chip: 'boards', icon: 'boards' },
-  { code: 'BRD-10', chip: 'boards', icon: 'boards' },
+  { code: 'MEET-10', chip: 'meetings', icon: 'meetings', connectionsUsed: 10, connectionsLimit: 51 },
+  { code: 'MEET-25', chip: 'meetings', icon: 'meetings', connectionsUsed: 5, connectionsLimit: 50 },
+  { code: 'MEET-50', chip: 'meetings', icon: 'meetings', connectionsUsed: 25, connectionsLimit: 100 },
+  { code: 'MEET-100', chip: 'meetings', icon: 'meetings', connectionsUsed: 0, connectionsLimit: 50 },
+  { code: 'WEB-25', chip: 'meetings', icon: 'webinars', connectionsUsed: 8, connectionsLimit: 40 },
+  { code: 'WEB-100', chip: 'meetings', icon: 'webinars', connectionsUsed: 42, connectionsLimit: 100 },
+  { code: 'WEB-150', chip: 'meetings', icon: 'webinars', connectionsUsed: 0, connectionsLimit: 100 },
+  { code: 'MESSENGER+', chip: 'messenger', icon: 'messenger', connectionsUsed: 18, connectionsLimit: 30 },
+  { code: 'MSG-PRO', chip: 'messenger', icon: 'messenger', connectionsUsed: 3, connectionsLimit: 25 },
+  { code: 'DRIVE-10', chip: 'drive', icon: 'drive', connectionsUsed: 12, connectionsLimit: 51 },
+  { code: 'DRIVE-25', chip: 'drive', icon: 'drive', connectionsUsed: 7, connectionsLimit: 50 },
+  { code: 'DRIVE-50', chip: 'drive', icon: 'drive', connectionsUsed: 31, connectionsLimit: 75 },
+  { code: 'MAIL-5', chip: 'mail', icon: 'mail', connectionsUsed: 2, connectionsLimit: 20 },
+  { code: 'MAIL-25', chip: 'mail', icon: 'mail', connectionsUsed: 15, connectionsLimit: 51 },
+  { code: 'BRD-01', chip: 'boards', icon: 'boards', connectionsUsed: 1, connectionsLimit: 10 },
+  { code: 'BRD-10', chip: 'boards', icon: 'boards', connectionsUsed: 9, connectionsLimit: 25 },
 ]
 
 const addUserPlanCatalogIndex = Object.fromEntries(
@@ -558,7 +560,14 @@ function buildEmployees(count: number): Employee[] {
       avatarUrl: employeeDemoSlavicStyleAvatarUrl(`${fn} ${ln}`, gender, `emp-${n}`),
       department: departments[i % departments.length] ?? '—',
       position: positions[i % positions.length] ?? '—',
-      tags: i % 3 === 0 ? 'Тег 1, Тег 2' : i % 3 === 1 ? 'VIP' : '—',
+      tags:
+        i === 0
+          ? 'Тег 1, Тег 2, Тег 3, Тег 4, Тег 5'
+          : i % 3 === 0
+            ? 'Тег 1, Тег 2'
+            : i % 3 === 1
+              ? 'VIP'
+              : '—',
       subscriptions,
       subscriptionStack,
       phone: demoPhones[i % demoPhones.length] ?? '—',
@@ -696,6 +705,8 @@ const HEADER_QUICK_SEGMENT_FILTER_OPTIONS: { value: HeaderQuickSegmentFilter; la
 ]
 
 const headerQuickSegment = ref<HeaderQuickSegment>('all')
+/** Чекбокс «Пользователи» в попапе «Фильтры»: вкл — сегмент из выпадающего списка применяется к таблице. */
+const headerUsersFilterActive = ref(false)
 
 /** Фильтр по продуктам: чекбокс — строка активна; переключатель: выкл = без подписки на продукт, вкл = с подпиской. */
 function createDefaultSubscriptionProductFilters(): Record<
@@ -753,7 +764,7 @@ function employeeMatchesHeaderQuickSegment(e: Employee, seg: HeaderQuickSegment)
 }
 
 const tableSourceData = computed(() => {
-  const seg = headerQuickSegment.value
+  const seg = headerUsersFilterActive.value ? headerQuickSegment.value : 'all'
   let rows = data.value
   if (seg !== 'all') {
     rows = rows.filter((e) => employeeMatchesHeaderQuickSegment(e, seg))
@@ -770,28 +781,23 @@ const FACET_COLUMN_IDS: readonly EmployeeFacetKey[] = [
   'tags',
 ] as const
 
-const employeeFacetFilters = reactive<Record<EmployeeFacetKey, { selected: string[] }>>({
-  department: { selected: [] },
-  position: { selected: [] },
-  tags: { selected: [] },
+const employeeFacetFilters = reactive<
+  Record<EmployeeFacetKey, { filterActive: boolean; selected: string[] }>
+>({
+  department: { filterActive: false, selected: [] },
+  position: { filterActive: false, selected: [] },
+  tags: { filterActive: false, selected: [] },
 })
 
 const filtersPopoverOpen = ref(false)
 
-/** Сумма выбранных значений по фасетам (есть выбор в строке). */
-const employeeFacetAppliedSelectionCount = computed(() => {
+const filtersPopoverBadgeCount = computed(() => {
   let n = 0
+  if (headerUsersFilterActive.value) n += 1
   for (const key of FACET_COLUMN_IDS) {
-    const r = employeeFacetFilters[key]
-    if (r.selected.length > 0) n += r.selected.length
+    if (employeeFacetFilters[key].filterActive) n += 1
   }
   return n
-})
-
-const filtersPopoverBadgeCount = computed(() => {
-  const facet = employeeFacetAppliedSelectionCount.value
-  const seg = headerQuickSegment.value !== 'all' ? 1 : 0
-  return facet + seg
 })
 
 const departmentFilterOptions = computed(() => {
@@ -840,10 +846,19 @@ function facetTriggerSummary(key: EmployeeFacetKey): string {
   return 'Свой выбор'
 }
 
+function onFacetFilterActiveToggle(key: EmployeeFacetKey, active: boolean) {
+  employeeFacetFilters[key].filterActive = active
+  syncEmployeeFacetFiltersToColumnFilters()
+}
+
 function onFacetOptionToggle(key: EmployeeFacetKey, option: string, checked: boolean) {
-  const arr = employeeFacetFilters[key].selected
+  const row = employeeFacetFilters[key]
+  const arr = row.selected
   const has = arr.includes(option)
-  if (checked && !has) arr.push(option)
+  if (checked && !has) {
+    arr.push(option)
+    row.filterActive = true
+  }
   if (!checked && has) {
     const i = arr.indexOf(option)
     if (i >= 0) arr.splice(i, 1)
@@ -851,12 +866,23 @@ function onFacetOptionToggle(key: EmployeeFacetKey, option: string, checked: boo
 }
 
 function clearFacetSelection(key: EmployeeFacetKey) {
+  employeeFacetFilters[key].filterActive = false
   employeeFacetFilters[key].selected = []
 }
 
+function onHeaderUsersFilterActiveToggle(active: boolean) {
+  headerUsersFilterActive.value = active
+  if (active && headerQuickSegment.value === 'all') {
+    headerQuickSegment.value = HEADER_QUICK_SEGMENT_FILTER_OPTIONS[0]!.value
+  }
+  syncEmployeeFacetFiltersToColumnFilters()
+}
+
 function resetAllEmployeeFacets() {
+  headerUsersFilterActive.value = false
   headerQuickSegment.value = 'all'
   for (const k of FACET_COLUMN_IDS) {
+    employeeFacetFilters[k].filterActive = false
     employeeFacetFilters[k].selected = []
   }
 }
@@ -868,7 +894,7 @@ function syncEmployeeFacetFiltersToColumnFilters() {
   const add: ColumnFiltersState = []
   for (const key of FACET_COLUMN_IDS) {
     const r = employeeFacetFilters[key]
-    if (r.selected.length > 0) {
+    if (r.filterActive && r.selected.length > 0) {
       add.push({ id: key, value: [...r.selected] })
     }
   }
@@ -879,17 +905,21 @@ function syncEmployeeFacetFiltersToColumnFilters() {
 }
 
 function setHeaderQuickSegment(seg: HeaderQuickSegment) {
-  headerQuickSegment.value = headerQuickSegment.value === seg ? 'all' : seg
+  const next = headerQuickSegment.value === seg ? 'all' : seg
+  headerQuickSegment.value = next
+  headerUsersFilterActive.value = next !== 'all'
   syncEmployeeFacetFiltersToColumnFilters()
 }
 
 function onHeaderQuickSegmentSelect(v: unknown) {
   const s = v == null || v === '' ? 'all' : (String(v) as HeaderQuickSegment)
   headerQuickSegment.value = s
+  if (s !== 'all') headerUsersFilterActive.value = true
   syncEmployeeFacetFiltersToColumnFilters()
 }
 
 function clearHeaderQuickSegment() {
+  headerUsersFilterActive.value = false
   headerQuickSegment.value = 'all'
   syncEmployeeFacetFiltersToColumnFilters()
 }
@@ -972,12 +1002,7 @@ const columns: ColumnDef<Employee>[] = [
   {
     accessorKey: 'tags',
     filterFn: facetTagsAnyMatchFilter,
-    cell: ({ getValue }) =>
-      h(
-        'span',
-        { class: 'block max-w-[10rem] truncate text-foreground text-sm leading-tight' },
-        String(getValue<string>()),
-      ),
+    cell: ({ getValue }) => String(getValue<string>()),
   },
   {
     accessorKey: 'subscriptions',
@@ -1107,6 +1132,7 @@ const userListSummary = computed(() => {
   void data.value
   void rowSelection.value
   void headerQuickSegment.value
+  void headerUsersFilterActive.value
   for (const p of SUBSCRIPTION_STACK_POOL) {
     void employeeSubscriptionProductFilters[p].filterActive
     void employeeSubscriptionProductFilters[p].requireHasSubscription
@@ -1116,7 +1142,8 @@ const userListSummary = computed(() => {
   const filtered = table.getFilteredRowModel().rows.length
   const useFiltered =
     hasActiveFiltersState(globalFilter.value, columnFilters.value)
-    || headerQuickSegment.value !== 'all'
+    || headerUsersFilterActive.value
+    || FACET_COLUMN_IDS.some((k) => employeeFacetFilters[k].filterActive)
     || SUBSCRIPTION_STACK_POOL.some((p) => employeeSubscriptionProductFilters[p].filterActive)
 
   const n = useFiltered ? filtered : total
@@ -1424,6 +1451,60 @@ const connectProductsBulkMode = ref(false)
 const connectProductsEmployeeId = ref<string | null>(null)
 const connectProductsPlanFilter = ref('')
 const connectProductsSelectedCodes = ref<string[]>([])
+/** Коды, уже отмеченные при открытии модалки — не дублируем в лимите повторно. */
+const connectProductsInitialSelectedCodes = ref<string[]>([])
+
+type PlanCatalogRow = (typeof ADD_USER_PLAN_CATALOG)[number]
+
+const connectProductsTargetUserCount = computed(() => {
+  if (connectProductsBulkMode.value) {
+    void rowSelection.value
+    return table.getFilteredSelectedRowModel().rows.length
+  }
+  return connectProductsEmployee.value ? 1 : 0
+})
+
+function connectProductsUsersAddingForPlan(code: string): number {
+  if (!connectProductsSelectedCodes.value.includes(code)) return 0
+  if (connectProductsInitialSelectedCodes.value.includes(code)) return 0
+  return connectProductsTargetUserCount.value
+}
+
+function connectProductsProjectedUsed(plan: PlanCatalogRow): number {
+  return plan.connectionsUsed + connectProductsUsersAddingForPlan(plan.code)
+}
+
+function connectProductsWouldExceedLimit(plan: PlanCatalogRow): boolean {
+  const add = connectProductsInitialSelectedCodes.value.includes(plan.code)
+    ? 0
+    : connectProductsTargetUserCount.value
+  return plan.connectionsUsed + add > plan.connectionsLimit
+}
+
+function isConnectProductsPlanCheckboxDisabled(code: string): boolean {
+  if (connectProductsSelectedCodes.value.includes(code)) return false
+  const plan = ADD_USER_PLAN_CATALOG.find((r) => r.code === code)
+  return plan ? connectProductsWouldExceedLimit(plan) : false
+}
+
+function notifyConnectProductsLimitExceeded(plan: PlanCatalogRow) {
+  const n = connectProductsTargetUserCount.value
+  const usersPhrase = n === 1 ? '1 пользователя' : `${n} пользователей`
+
+  const similar = ADD_USER_PLAN_CATALOG.filter(
+    (r) =>
+      r.chip === plan.chip
+      && r.code !== plan.code
+      && r.connectionsUsed + n <= r.connectionsLimit,
+  ).map((r) => r.code)
+
+  const hint =
+    similar.length > 0
+      ? `Выберите, например: ${similar.slice(0, 3).join(', ')}.`
+      : 'Расширьте тариф или выберите другую подписку похожего типа.'
+
+  toast.error(`В «${plan.code}» нет свободных мест для ${usersPhrase}.`, { description: hint })
+}
 
 /** Черновик тарифов после «Сохранить» в массовой модалке подписок; применяется кнопкой панели «Применить». */
 const bulkPendingPlanCodes = ref<string[]>([])
@@ -1445,6 +1526,129 @@ const bulkMassPlaceholderTitle = computed(() => {
   }
 })
 
+const bulkTagsChips = ref<string[]>([])
+const bulkTagsInput = ref('')
+const bulkDepartmentCustom = ref('')
+const bulkDepartmentSelected = ref('')
+const bulkPositionCustom = ref('')
+const bulkPositionSelected = ref('')
+
+const bulkCommonTags = computed(() =>
+  tagsFilterOptions.value.filter((t) => t !== '—'),
+)
+
+const bulkDepartmentOptions = computed(() =>
+  departmentFilterOptions.value.filter((d) => d !== '—'),
+)
+
+const bulkPositionOptions = computed(() =>
+  positionFilterOptions.value.filter((p) => p !== '—'),
+)
+
+function resetBulkMassForm() {
+  bulkTagsChips.value = []
+  bulkTagsInput.value = ''
+  bulkDepartmentCustom.value = ''
+  bulkDepartmentSelected.value = ''
+  bulkPositionCustom.value = ''
+  bulkPositionSelected.value = ''
+}
+
+function commitBulkTagsFromInput() {
+  const parts = bulkTagsInput.value
+    .split(',')
+    .map((s) => s.trim())
+    .filter(Boolean)
+  if (parts.length === 0) return
+  const set = new Set(bulkTagsChips.value)
+  for (const p of parts) set.add(p)
+  bulkTagsChips.value = [...set]
+  bulkTagsInput.value = ''
+}
+
+function commitBulkTagsFromInputIfPending() {
+  if (!bulkTagsInput.value.trim()) return
+  commitBulkTagsFromInput()
+}
+
+function removeBulkTagAt(index: number) {
+  bulkTagsChips.value = bulkTagsChips.value.filter((_, i) => i !== index)
+}
+
+function onBulkTagsInputKeydown(e: KeyboardEvent) {
+  const el = e.target as HTMLInputElement
+  if (e.key === 'Enter' || e.key === ',') {
+    e.preventDefault()
+    commitBulkTagsFromInput()
+    return
+  }
+  if (e.key === 'Backspace' && el.value === '' && bulkTagsChips.value.length > 0) {
+    removeBulkTagAt(bulkTagsChips.value.length - 1)
+  }
+}
+
+function toggleBulkCommonTag(tag: string) {
+  const cur = bulkTagsChips.value
+  if (cur.includes(tag)) {
+    bulkTagsChips.value = cur.filter((t) => t !== tag)
+  } else {
+    bulkTagsChips.value = [...cur, tag]
+  }
+}
+
+function resolveBulkSingleFieldValue(custom: string, selected: string): string {
+  const c = custom.trim()
+  if (c) return c
+  return selected.trim()
+}
+
+function applyBulkMassToSelectedEmployees() {
+  const kind = bulkMassPlaceholderKind.value
+  if (!kind) return false
+
+  const rows = table.getFilteredSelectedRowModel().rows
+  if (rows.length === 0) return false
+
+  if (kind === 'tags') {
+    const toAdd = bulkTagsChips.value
+    if (toAdd.length === 0) return false
+    for (const r of rows) {
+      const idx = data.value.findIndex((e) => e.id === r.original.id)
+      if (idx === -1) continue
+      const existing = parseTagsForChips(data.value[idx]!.tags)
+      const merged = [...new Set([...existing, ...toAdd])]
+      data.value[idx]!.tags = formatTagsForEmployee(merged)
+    }
+    return true
+  }
+
+  const value =
+    kind === 'department'
+      ? resolveBulkSingleFieldValue(bulkDepartmentCustom.value, bulkDepartmentSelected.value)
+      : resolveBulkSingleFieldValue(bulkPositionCustom.value, bulkPositionSelected.value)
+
+  if (!value) return false
+
+  for (const r of rows) {
+    const idx = data.value.findIndex((e) => e.id === r.original.id)
+    if (idx === -1) continue
+    if (kind === 'department') {
+      data.value[idx]!.department = value
+    } else {
+      data.value[idx]!.position = value
+    }
+  }
+  return true
+}
+
+function submitBulkMassDialog() {
+  if (bulkMassPlaceholderKind.value === 'tags') {
+    commitBulkTagsFromInputIfPending()
+  }
+  if (!applyBulkMassToSelectedEmployees()) return
+  bulkMassPlaceholderOpen.value = false
+}
+
 const connectProductsEmployee = computed(() => {
   const id = connectProductsEmployeeId.value
   if (!id) return null
@@ -1458,6 +1662,47 @@ const connectProductsFilteredPlans = computed(() => {
     if (row.code.toLowerCase().includes(q)) return true
     return PRODUCT_SUBSCRIPTION_LABELS[row.chip].toLowerCase().includes(q)
   })
+})
+
+const connectProductsSelectAllModel = computed({
+  get(): boolean | 'indeterminate' {
+    void connectProductsSelectedCodes.value
+    void connectProductsPlanFilter.value
+    const rows = connectProductsFilteredPlans.value
+    if (rows.length === 0) return false
+    const selected = connectProductsSelectedCodes.value
+    const picked = rows.filter((r) => selected.includes(r.code)).length
+    if (picked === 0) return false
+    if (picked === rows.length) return true
+    return 'indeterminate'
+  },
+  set(value: boolean | 'indeterminate') {
+    const codes = connectProductsFilteredPlans.value.map((r) => r.code)
+    const on = value === true || value === 'indeterminate'
+    if (on) {
+      const set = new Set(connectProductsSelectedCodes.value)
+      let skipped = 0
+      for (const code of codes) {
+        if (set.has(code)) continue
+        const plan = ADD_USER_PLAN_CATALOG.find((r) => r.code === code)
+        if (!plan) continue
+        if (connectProductsWouldExceedLimit(plan)) {
+          skipped += 1
+          continue
+        }
+        set.add(code)
+      }
+      connectProductsSelectedCodes.value = [...set]
+      if (skipped > 0) {
+        toast.warning('Часть подписок не выбрана: нет свободных мест по лимиту подключений.')
+      }
+    } else {
+      const drop = new Set(codes)
+      connectProductsSelectedCodes.value = connectProductsSelectedCodes.value.filter(
+        (c) => !drop.has(c),
+      )
+    }
+  },
 })
 
 function applyPlanCodesToEmployeeRow(row: Employee, planCodes: string[]) {
@@ -1482,10 +1727,20 @@ function applyPlanCodesToSelectedEmployees(planCodes: string[]) {
   }
 }
 
+function snapshotConnectProductsInitialSelection() {
+  connectProductsInitialSelectedCodes.value = [...connectProductsSelectedCodes.value]
+}
+
 function toggleConnectProductsPlan(code: string, checked: boolean) {
+  const plan = ADD_USER_PLAN_CATALOG.find((r) => r.code === code)
+  if (!plan) return
   const cur = connectProductsSelectedCodes.value
   if (checked) {
     if (cur.includes(code)) return
+    if (connectProductsWouldExceedLimit(plan)) {
+      notifyConnectProductsLimitExceeded(plan)
+      return
+    }
     connectProductsSelectedCodes.value = [...cur, code]
   } else {
     connectProductsSelectedCodes.value = cur.filter((c) => c !== code)
@@ -1497,6 +1752,7 @@ function openConnectProductsDialog(employee: Employee) {
   connectProductsEmployeeId.value = employee.id
   connectProductsPlanFilter.value = ''
   connectProductsSelectedCodes.value = [...inferPlanCodesFromEmployee(employee)]
+  snapshotConnectProductsInitialSelection()
   connectProductsDialogOpen.value = true
 }
 
@@ -1506,6 +1762,7 @@ function openConnectProductsDialogBulk() {
   connectProductsEmployeeId.value = null
   connectProductsPlanFilter.value = ''
   connectProductsSelectedCodes.value = [...bulkPendingPlanCodes.value]
+  snapshotConnectProductsInitialSelection()
   connectProductsDialogOpen.value = true
 }
 
@@ -1546,6 +1803,7 @@ function submitConnectProductsDialog() {
 
 function openBulkMassPlaceholderDialog(kind: BulkMassPlaceholderKind) {
   if (selectedEmployeesCount.value === 0) return
+  resetBulkMassForm()
   bulkMassPlaceholderKind.value = kind
   bulkMassPlaceholderOpen.value = true
 }
@@ -1563,6 +1821,7 @@ watch(connectProductsDialogOpen, (open) => {
     connectProductsBulkMode.value = false
     connectProductsPlanFilter.value = ''
     connectProductsSelectedCodes.value = []
+    connectProductsInitialSelectedCodes.value = []
   }
 })
 
@@ -1573,7 +1832,10 @@ watch(showEmployeeBulkBar, (show) => {
 })
 
 watch(bulkMassPlaceholderOpen, (open) => {
-  if (!open) bulkMassPlaceholderKind.value = null
+  if (!open) {
+    bulkMassPlaceholderKind.value = null
+    resetBulkMassForm()
+  }
 })
 </script>
 
@@ -1793,24 +2055,16 @@ watch(bulkMassPlaceholderOpen, (open) => {
               </Popover>
             </div>
           </div>
-          <div
-            class="flex min-w-0 flex-1 flex-col items-end gap-1.5 text-end text-white sm:flex-initial sm:flex-row sm:flex-wrap sm:items-center sm:justify-end sm:gap-x-3 sm:gap-y-2 sm:text-start"
-          >
-            <span
-              class="min-w-0 shrink text-end text-xs font-medium leading-tight text-white/65 sm:text-sm sm:text-white/70"
-            >
-              Добавить пользователям:
-            </span>
-            <div class="flex flex-wrap items-center justify-end gap-1.5">
+          <div class="flex min-w-0 flex-1 flex-wrap items-center justify-end gap-1.5 text-white sm:flex-initial">
               <Button
                 type="button"
                 variant="ghost"
                 class="relative h-9 shrink-0 gap-1.5 rounded-md px-2.5 text-sm font-normal text-white hover:bg-white/10 hover:text-white sm:px-3"
-                aria-label="Подписки: открыть выбор тарифов для отмеченных"
+                aria-label="Добавить подписки выбранным пользователям"
                 @click="openConnectProductsDialogBulk"
               >
-                <Layers class="size-4 shrink-0 opacity-90" aria-hidden="true" />
-                Подписки
+                <Plus class="size-4 shrink-0 opacity-90" aria-hidden="true" />
+                Добавить подписки
                 <span
                   v-if="bulkPendingPlanCodes.length > 0"
                   class="absolute -top-1 -right-1 flex h-5 min-w-5 items-center justify-center rounded-full bg-primary px-1 text-[10px] font-semibold leading-none text-primary-foreground shadow-sm tabular-nums"
@@ -1823,31 +2077,31 @@ watch(bulkMassPlaceholderOpen, (open) => {
                 type="button"
                 variant="ghost"
                 class="h-9 shrink-0 gap-1.5 rounded-md px-2.5 text-sm font-normal text-white hover:bg-white/10 hover:text-white sm:px-3"
-                aria-label="Отдел: добавить, убрать или заменить у выбранных сотрудников"
+                aria-label="Добавить отдел выбранным пользователям"
                 @click="openBulkMassPlaceholderDialog('department')"
               >
-                <Building2 class="size-4 shrink-0 opacity-90" aria-hidden="true" />
-                Отдел
+                <Plus class="size-4 shrink-0 opacity-90" aria-hidden="true" />
+                Добавить отдел
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 class="h-9 shrink-0 gap-1.5 rounded-md px-2.5 text-sm font-normal text-white hover:bg-white/10 hover:text-white sm:px-3"
-                aria-label="Должность: добавить, убрать или заменить у выбранных сотрудников"
+                aria-label="Добавить должность выбранным пользователям"
                 @click="openBulkMassPlaceholderDialog('position')"
               >
-                <Briefcase class="size-4 shrink-0 opacity-90" aria-hidden="true" />
-                Должность
+                <Plus class="size-4 shrink-0 opacity-90" aria-hidden="true" />
+                Добавить должность
               </Button>
               <Button
                 type="button"
                 variant="ghost"
                 class="h-9 shrink-0 gap-1.5 rounded-md px-2.5 text-sm font-normal text-white hover:bg-white/10 hover:text-white sm:px-3"
-                aria-label="Теги: добавить, убрать или заменить у выбранных сотрудников"
+                aria-label="Добавить теги выбранным пользователям"
                 @click="openBulkMassPlaceholderDialog('tags')"
               >
-                <Tags class="size-4 shrink-0 opacity-90" aria-hidden="true" />
-                Теги
+                <Plus class="size-4 shrink-0 opacity-90" aria-hidden="true" />
+                Добавить теги
               </Button>
               <Button
                 v-if="bulkPendingPlanCodes.length > 0"
@@ -1858,7 +2112,6 @@ watch(bulkMassPlaceholderOpen, (open) => {
               >
                 Применить
               </Button>
-            </div>
           </div>
         </div>
       </Transition>
@@ -1951,9 +2204,17 @@ watch(bulkMassPlaceholderOpen, (open) => {
                   class="w-[min(calc(100vw-2rem),20rem)] border border-border p-3 shadow-md"
                   :side-offset="8"
                 >
+                  <p class="text-muted-foreground mb-1.5 text-[11px] leading-snug">
+                    Чекбокс включает фильтр; в списке — уточнение.
+                  </p>
                   <div class="flex flex-col gap-1.5">
                     <div class="flex w-full min-w-0 items-center gap-2">
-                      <div class="flex min-w-0 flex-1 items-center">
+                      <div class="flex min-w-0 flex-1 items-center gap-2">
+                        <Checkbox
+                          :model-value="headerUsersFilterActive"
+                          aria-label="Фильтр по сегменту пользователей"
+                          @update:model-value="(v) => onHeaderUsersFilterActiveToggle(!!v)"
+                        />
                         <span class="text-foreground truncate text-xs">Пользователи</span>
                       </div>
                       <div class="flex w-44 shrink-0 items-center gap-1">
@@ -1962,6 +2223,7 @@ watch(bulkMassPlaceholderOpen, (open) => {
                           @update:model-value="onHeaderQuickSegmentSelect"
                         >
                           <SelectTrigger
+                            :disabled="!headerUsersFilterActive"
                             class="h-9 min-w-0 w-full max-w-full flex-1 shrink-0 justify-between gap-2 rounded-lg border-border px-2.5 text-xs font-normal"
                             aria-label="Сегмент списка пользователей"
                           >
@@ -1980,7 +2242,7 @@ watch(bulkMassPlaceholderOpen, (open) => {
                           </SelectContent>
                         </Select>
                         <button
-                          v-if="headerQuickSegment !== 'all'"
+                          v-if="headerUsersFilterActive"
                           type="button"
                           class="text-muted-foreground hover:text-foreground inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-border bg-background outline-none"
                           aria-label="Сбросить сегмент пользователей"
@@ -1995,7 +2257,12 @@ watch(bulkMassPlaceholderOpen, (open) => {
                       :key="facet.id"
                       class="flex w-full min-w-0 items-center gap-2"
                     >
-                      <div class="flex min-w-0 flex-1 items-center">
+                      <div class="flex min-w-0 flex-1 items-center gap-2">
+                        <Checkbox
+                          :model-value="employeeFacetFilters[facet.id].filterActive"
+                          :aria-label="`Фильтр: ${facet.label}`"
+                          @update:model-value="(v) => onFacetFilterActiveToggle(facet.id, !!v)"
+                        />
                         <span class="text-foreground truncate text-xs">{{ facet.label }}</span>
                       </div>
                       <div class="flex w-44 shrink-0 items-center gap-1">
@@ -2004,7 +2271,8 @@ watch(bulkMassPlaceholderOpen, (open) => {
                             <Button
                               type="button"
                               variant="outline"
-                              class="h-9 min-w-0 w-full max-w-full flex-1 shrink-0 justify-between gap-2 rounded-lg border-border bg-transparent px-2.5 text-xs font-normal"
+                              :disabled="!employeeFacetFilters[facet.id].filterActive"
+                              class="h-9 min-w-0 w-full max-w-full flex-1 shrink-0 justify-between gap-2 rounded-lg border-border bg-transparent px-2.5 text-xs font-normal disabled:cursor-not-allowed disabled:opacity-50"
                             >
                               <span
                                 class="min-w-0 flex-1 truncate text-left text-xs"
@@ -2048,7 +2316,7 @@ watch(bulkMassPlaceholderOpen, (open) => {
                           </PopoverContent>
                         </Popover>
                         <button
-                          v-if="employeeFacetFilters[facet.id].selected.length"
+                          v-if="employeeFacetFilters[facet.id].filterActive"
                           type="button"
                           class="text-muted-foreground hover:text-foreground inline-flex size-9 shrink-0 items-center justify-center rounded-md border border-border bg-background outline-none"
                           :aria-label="`Сбросить ${facet.label}`"
@@ -2102,7 +2370,7 @@ watch(bulkMassPlaceholderOpen, (open) => {
                       <div
                         v-for="row in subscriptionFilterPopoverRows"
                         :key="row.product"
-                        class="flex items-center justify-between gap-2 rounded-md border border-border bg-background px-2 py-1.5"
+                        class="flex items-center justify-between gap-2 py-1.5"
                       >
                         <div class="flex min-w-0 flex-1 items-center gap-2">
                           <Checkbox
@@ -2218,6 +2486,7 @@ watch(bulkMassPlaceholderOpen, (open) => {
                         'min-w-0 max-w-44 overflow-hidden',
                       isEmployeeTableEqualWidthColumn(header.column.id) &&
                         'min-w-0 max-w-52 overflow-hidden',
+                      header.column.id === 'tags' && 'min-w-0 w-36 max-w-36 overflow-hidden',
                       isNarrowColumn(header.column.id) && 'whitespace-nowrap text-center',
                       header.column.id === 'actions' &&
                         'w-auto min-w-min max-w-none shrink-0 px-2',
@@ -2285,6 +2554,7 @@ watch(bulkMassPlaceholderOpen, (open) => {
                         'min-w-0 max-w-44 overflow-hidden',
                       isEmployeeTableEqualWidthColumn(cell.column.id) &&
                         'min-w-0 max-w-52 overflow-hidden',
+                      cell.column.id === 'tags' && 'min-w-0 w-36 max-w-36 overflow-hidden',
                       isNarrowColumn(cell.column.id) && 'whitespace-nowrap text-center',
                       cell.column.id === 'actions' &&
                         'w-auto min-w-min max-w-none shrink-0 px-2',
@@ -2433,6 +2703,10 @@ watch(bulkMassPlaceholderOpen, (open) => {
                         </template>
                       </div>
                     </template>
+                    <EmployeeTagsCell
+                      v-else-if="cell.column.id === 'tags'"
+                      :value="row.original.tags"
+                    />
                     <FlexRender
                       v-else
                       :render="cell.column.columnDef.cell"
@@ -3123,12 +3397,18 @@ watch(bulkMassPlaceholderOpen, (open) => {
                 autocomplete="off"
               />
             </div>
+            <label
+              class="flex min-h-10 cursor-pointer items-center justify-between gap-3 rounded-md border border-border bg-muted/30 px-2 py-2"
+            >
+              <span class="text-sm font-medium text-foreground">Выбрать все</span>
+              <Checkbox v-model="connectProductsSelectAllModel" aria-label="Выбрать все подписки в списке" />
+            </label>
             <ScrollArea class="h-72 w-full">
               <div class="flex flex-col gap-0.5 pr-1">
                 <label
                   v-for="row in connectProductsFilteredPlans"
                   :key="`connect-${row.code}`"
-                  class="flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 text-left hover:bg-muted"
+                  class="flex min-h-[3.25rem] cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 text-left hover:bg-muted"
                 >
                   <span class="flex min-w-0 flex-1 items-center gap-2">
                     <span
@@ -3144,10 +3424,30 @@ watch(bulkMassPlaceholderOpen, (open) => {
                     </span>
                     <span class="truncate text-sm font-medium text-foreground">{{ row.code }}</span>
                   </span>
+                  <span
+                    class="text-muted-foreground shrink-0 whitespace-nowrap text-right text-xs leading-none"
+                  >
+                    <span>Лимиты подключений </span>
+                    <span class="tabular-nums text-foreground">
+                      <span
+                        :class="cn(
+                          'font-semibold',
+                          connectProductsProjectedUsed(row) >= row.connectionsLimit
+                            ? 'text-destructive'
+                            : 'text-primary',
+                        )"
+                      >{{ connectProductsProjectedUsed(row) }}</span>
+                      <span class="font-normal text-muted-foreground"> из </span>
+                      <span class="font-normal">{{ row.connectionsLimit }}</span>
+                    </span>
+                  </span>
                   <Checkbox
                     :model-value="connectProductsSelectedCodes.includes(row.code)"
-                    class="mr-2 shrink-0"
+                    :disabled="isConnectProductsPlanCheckboxDisabled(row.code)"
+                    class="mr-1 shrink-0"
+                    :aria-label="`Подписка ${row.code}`"
                     @update:model-value="(v) => toggleConnectProductsPlan(row.code, !!v)"
+                    @click.stop
                   />
                 </label>
               </div>
@@ -3185,8 +3485,13 @@ watch(bulkMassPlaceholderOpen, (open) => {
             <DialogDescription class="text-muted-foreground mt-1 text-sm leading-relaxed">
               Выбрано
               {{ selectedEmployeesCount }}
-              {{ pluralizeUsers(selectedEmployeesCount) }}. Здесь появится возможность добавлять, убирать и
-              заменять значение сразу для всех выбранных.
+              {{ pluralizeUsers(selectedEmployeesCount) }}.
+              <template v-if="bulkMassPlaceholderKind === 'tags'">
+                Новые теги будут добавлены к уже существующим у каждого пользователя.
+              </template>
+              <template v-else>
+                Значение будет одинаковым для всех выбранных.
+              </template>
             </DialogDescription>
           </div>
           <DialogClose as-child>
@@ -3201,12 +3506,165 @@ watch(bulkMassPlaceholderOpen, (open) => {
             </Button>
           </DialogClose>
         </div>
+
+        <div class="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3">
+          <template v-if="bulkMassPlaceholderKind === 'tags'">
+            <p class="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
+              Добавить теги
+            </p>
+            <div
+              role="group"
+              aria-label="Поле ввода тегов"
+              class="border-input focus-within:border-primary mb-4 flex min-h-10 w-full flex-wrap items-center gap-1.5 rounded-md border bg-background px-2 py-1.5 transition-colors"
+            >
+              <span
+                v-for="(tag, idx) in bulkTagsChips"
+                :key="`${tag}-${idx}`"
+                class="bg-muted text-foreground inline-flex max-w-full items-center gap-0.5 rounded-md px-2 py-0.5 text-sm"
+              >
+                <span class="min-w-0 truncate">{{ tag }}</span>
+                <button
+                  type="button"
+                  class="text-muted-foreground hover:text-foreground -mr-0.5 inline-flex size-5 shrink-0 items-center justify-center rounded-sm outline-none"
+                  :aria-label="`Удалить тег «${tag}»`"
+                  @click="removeBulkTagAt(idx)"
+                >
+                  <X class="size-3.5 shrink-0" aria-hidden="true" />
+                </button>
+              </span>
+              <input
+                v-model="bulkTagsInput"
+                type="text"
+                class="placeholder:text-text-placeholder min-w-40 flex-1 border-0 bg-transparent py-1 text-sm text-foreground outline-none"
+                placeholder="Тег и Enter или запятая"
+                autocomplete="off"
+                @keydown="onBulkTagsInputKeydown"
+                @blur="commitBulkTagsFromInputIfPending"
+              >
+            </div>
+
+            <p class="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
+              Общие теги
+            </p>
+            <p class="text-muted-foreground mb-2 text-xs leading-snug">
+              Уже используются у других пользователей — нажмите, чтобы добавить в список.
+            </p>
+            <ScrollArea class="max-h-48 w-full">
+              <div class="flex flex-wrap gap-1.5 pr-2 pb-1">
+                <button
+                  v-for="tag in bulkCommonTags"
+                  :key="`bulk-common-${tag}`"
+                  type="button"
+                  :class="cn(
+                    'rounded-md border px-2.5 py-1 text-xs font-medium transition-colors',
+                    bulkTagsChips.includes(tag)
+                      ? 'border-primary bg-primary/10 text-foreground'
+                      : 'border-border bg-background text-foreground hover:bg-muted',
+                  )"
+                  @click="toggleBulkCommonTag(tag)"
+                >
+                  {{ tag }}
+                </button>
+                <p
+                  v-if="bulkCommonTags.length === 0"
+                  class="text-muted-foreground text-sm"
+                >
+                  Пока нет общих тегов
+                </p>
+              </div>
+            </ScrollArea>
+          </template>
+
+          <template v-else-if="bulkMassPlaceholderKind === 'department'">
+            <p class="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
+              Новый отдел
+            </p>
+            <Input
+              v-model="bulkDepartmentCustom"
+              variant="default"
+              class="mb-4 h-10"
+              placeholder="Введите название, если нет в списке"
+              autocomplete="organization"
+              @input="bulkDepartmentSelected = ''"
+            />
+
+            <p class="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
+              Уже в организации
+            </p>
+            <ScrollArea class="max-h-56 w-full">
+              <RadioGroup
+                v-model="bulkDepartmentSelected"
+                class="flex flex-col gap-1 pr-2"
+                @update:model-value="bulkDepartmentCustom = ''"
+              >
+                <label
+                  v-for="dept in bulkDepartmentOptions"
+                  :key="`bulk-dept-${dept}`"
+                  class="flex min-h-10 cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 hover:bg-muted"
+                >
+                  <RadioGroupItem :value="dept" />
+                  <span class="text-sm text-foreground">{{ dept }}</span>
+                </label>
+              </RadioGroup>
+              <p
+                v-if="bulkDepartmentOptions.length === 0"
+                class="text-muted-foreground px-2 text-sm"
+              >
+                Нет сохранённых отделов — укажите новый выше.
+              </p>
+            </ScrollArea>
+          </template>
+
+          <template v-else-if="bulkMassPlaceholderKind === 'position'">
+            <p class="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
+              Новая должность
+            </p>
+            <Input
+              v-model="bulkPositionCustom"
+              variant="default"
+              class="mb-4 h-10"
+              placeholder="Введите название, если нет в списке"
+              autocomplete="organization-title"
+              @input="bulkPositionSelected = ''"
+            />
+
+            <p class="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
+              Уже в организации
+            </p>
+            <ScrollArea class="max-h-56 w-full">
+              <RadioGroup
+                v-model="bulkPositionSelected"
+                class="flex flex-col gap-1 pr-2"
+                @update:model-value="bulkPositionCustom = ''"
+              >
+                <label
+                  v-for="pos in bulkPositionOptions"
+                  :key="`bulk-pos-${pos}`"
+                  class="flex min-h-10 cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 hover:bg-muted"
+                >
+                  <RadioGroupItem :value="pos" />
+                  <span class="text-sm text-foreground">{{ pos }}</span>
+                </label>
+              </RadioGroup>
+              <p
+                v-if="bulkPositionOptions.length === 0"
+                class="text-muted-foreground px-2 text-sm"
+              >
+                Нет сохранённых должностей — укажите новую выше.
+              </p>
+            </ScrollArea>
+          </template>
+        </div>
+
         <div class="flex shrink-0 justify-end gap-2 border-t border-border p-4">
           <DialogClose as-child>
             <Button type="button" variant="outline" class="h-9 bg-background px-3">
               Закрыть
             </Button>
           </DialogClose>
+          <Button type="button" class="h-9 px-3" @click="submitBulkMassDialog">
+            Применить
+          </Button>
         </div>
       </DialogContent>
     </DialogPortal>
