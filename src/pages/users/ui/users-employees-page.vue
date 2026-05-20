@@ -21,6 +21,7 @@ import {
   ArrowDown,
   ArrowUp,
   ArrowUpDown,
+  Check,
   ChevronDown,
   ChevronLeft,
   ChevronRight,
@@ -57,6 +58,12 @@ import { Button } from '@/shared/ui/button'
 import { Avatar, AvatarFallback, AvatarImage } from '@/shared/ui/avatar'
 import { Checkbox } from '@/shared/ui/checkbox'
 import { Input } from '@/shared/ui/input'
+import {
+  InputGroup,
+  InputGroupAddon,
+  InputGroupButton,
+  InputGroupInput,
+} from '@/shared/ui/input-group'
 import { Popover, PopoverContent, PopoverTrigger } from '@/shared/ui/popover'
 import { RadioGroup, RadioGroupItem } from '@/shared/ui/radio-group'
 import { ScrollArea } from '@/shared/ui/scroll-area'
@@ -1530,19 +1537,254 @@ const bulkTagsChips = ref<string[]>([])
 const bulkTagsInput = ref('')
 const bulkDepartmentCustom = ref('')
 const bulkDepartmentSelected = ref('')
+const bulkDepartmentAddedOptions = ref<string[]>([])
 const bulkPositionCustom = ref('')
 const bulkPositionSelected = ref('')
+const bulkPositionAddedOptions = ref<string[]>([])
+
+type BulkOrgFieldKind = 'department' | 'position'
+
+const bulkOrgEditing = ref<{ kind: BulkOrgFieldKind, value: string } | null>(null)
 
 const bulkCommonTags = computed(() =>
   tagsFilterOptions.value.filter((t) => t !== '—'),
 )
 
+function buildBulkOrgOptionsList(
+  orgOptions: readonly string[],
+  addedOptions: readonly string[],
+): string[] {
+  const merged = new Set<string>()
+  const result: string[] = []
+  for (const item of addedOptions) {
+    if (!item || item === '—' || merged.has(item)) continue
+    result.push(item)
+    merged.add(item)
+  }
+  const rest = orgOptions
+    .filter((o) => o && o !== '—' && !merged.has(o))
+    .sort((a, b) => a.localeCompare(b, 'ru'))
+  return [...result, ...rest]
+}
+
 const bulkDepartmentOptions = computed(() =>
-  departmentFilterOptions.value.filter((d) => d !== '—'),
+  buildBulkOrgOptionsList(
+    departmentFilterOptions.value,
+    bulkDepartmentAddedOptions.value,
+  ),
 )
 
 const bulkPositionOptions = computed(() =>
-  positionFilterOptions.value.filter((p) => p !== '—'),
+  buildBulkOrgOptionsList(
+    positionFilterOptions.value,
+    bulkPositionAddedOptions.value,
+  ),
+)
+
+const bulkDepartmentListScrollRef = ref<{ $el?: HTMLElement } | null>(null)
+const bulkPositionListScrollRef = ref<{ $el?: HTMLElement } | null>(null)
+
+const bulkOrgIsEditing = computed(() => bulkOrgEditing.value !== null)
+
+function scrollBulkOrgListToTop(kind: BulkOrgFieldKind) {
+  nextTick(() => {
+    const root =
+      kind === 'department'
+        ? bulkDepartmentListScrollRef.value?.$el
+        : bulkPositionListScrollRef.value?.$el
+    const viewport = root?.querySelector(
+      '[data-slot="scroll-area-viewport"]',
+    ) as HTMLElement | null
+    viewport?.scrollTo({ top: 0, behavior: 'smooth' })
+  })
+}
+
+function prependBulkOrgAddedOption(kind: BulkOrgFieldKind, value: string) {
+  if (kind === 'department') {
+    bulkDepartmentAddedOptions.value = [
+      value,
+      ...bulkDepartmentAddedOptions.value.filter((d) => d !== value),
+    ]
+  } else {
+    bulkPositionAddedOptions.value = [
+      value,
+      ...bulkPositionAddedOptions.value.filter((p) => p !== value),
+    ]
+  }
+}
+
+function addBulkDepartmentFromInput() {
+  if (bulkOrgEditing.value) return
+  const v = bulkDepartmentCustom.value.trim()
+  if (!v) return
+  const isNew = !bulkDepartmentOptions.value.includes(v)
+  if (isNew) prependBulkOrgAddedOption('department', v)
+  bulkDepartmentSelected.value = v
+  bulkDepartmentCustom.value = ''
+  if (isNew) scrollBulkOrgListToTop('department')
+}
+
+function addBulkPositionFromInput() {
+  if (bulkOrgEditing.value) return
+  const v = bulkPositionCustom.value.trim()
+  if (!v) return
+  const isNew = !bulkPositionOptions.value.includes(v)
+  if (isNew) prependBulkOrgAddedOption('position', v)
+  bulkPositionSelected.value = v
+  bulkPositionCustom.value = ''
+  if (isNew) scrollBulkOrgListToTop('position')
+}
+
+type BulkDeleteKind = BulkOrgFieldKind | 'tag'
+
+const bulkOrgEditDraft = ref('')
+const bulkOrgDeletePending = ref<{
+  kind: BulkDeleteKind
+  value: string
+  outsidersCount: number
+} | null>(null)
+const bulkOrgDeleteConfirmOpen = ref(false)
+
+function bulkOrgFieldLabel(kind: BulkOrgFieldKind): string {
+  return kind === 'department' ? 'отдел' : 'должность'
+}
+
+function bulkDeleteFieldLabel(kind: BulkDeleteKind): string {
+  if (kind === 'tag') return 'тег'
+  return bulkOrgFieldLabel(kind)
+}
+
+function employeeHasTag(employee: Employee, tag: string): boolean {
+  return parseTagsForChips(employee.tags).includes(tag)
+}
+
+function countTagUsersOutsideSelection(tag: string): number {
+  void rowSelection.value
+  const selectedIds = new Set(
+    table.getFilteredSelectedRowModel().rows.map((r) => r.original.id),
+  )
+  return data.value.filter(
+    (e) => employeeHasTag(e, tag) && !selectedIds.has(e.id),
+  ).length
+}
+
+function removeTagFromAllEmployees(tag: string) {
+  for (const e of data.value) {
+    const chips = parseTagsForChips(e.tags).filter((t) => t !== tag)
+    e.tags = formatTagsForEmployee(chips)
+  }
+  bulkTagsChips.value = bulkTagsChips.value.filter((t) => t !== tag)
+}
+
+function requestDeleteBulkCommonTag(tag: string) {
+  const outsiders = countTagUsersOutsideSelection(tag)
+  if (outsiders > 0) {
+    bulkOrgDeletePending.value = { kind: 'tag', value: tag, outsidersCount: outsiders }
+    bulkOrgDeleteConfirmOpen.value = true
+    return
+  }
+  removeTagFromAllEmployees(tag)
+}
+
+function isBulkOrgEditing(kind: BulkOrgFieldKind, value: string): boolean {
+  return bulkOrgEditing.value?.kind === kind && bulkOrgEditing.value?.value === value
+}
+
+function countBulkOrgFieldUsersOutsideSelection(kind: BulkOrgFieldKind, value: string): number {
+  void rowSelection.value
+  const selectedIds = new Set(
+    table.getFilteredSelectedRowModel().rows.map((r) => r.original.id),
+  )
+  return data.value.filter((e) => {
+    const fieldValue = kind === 'department' ? e.department : e.position
+    return fieldValue === value && !selectedIds.has(e.id)
+  }).length
+}
+
+function renameBulkOrgField(kind: BulkOrgFieldKind, oldValue: string, newValue: string) {
+  if (!newValue || oldValue === newValue) return
+  for (const e of data.value) {
+    if (kind === 'department' && e.department === oldValue) e.department = newValue
+    if (kind === 'position' && e.position === oldValue) e.position = newValue
+  }
+  if (kind === 'department') {
+    bulkDepartmentAddedOptions.value = bulkDepartmentAddedOptions.value.map((d) =>
+      d === oldValue ? newValue : d,
+    )
+    if (bulkDepartmentSelected.value === oldValue) bulkDepartmentSelected.value = newValue
+  } else {
+    bulkPositionAddedOptions.value = bulkPositionAddedOptions.value.map((p) =>
+      p === oldValue ? newValue : p,
+    )
+    if (bulkPositionSelected.value === oldValue) bulkPositionSelected.value = newValue
+  }
+}
+
+function clearBulkOrgFieldFromEmployees(kind: BulkOrgFieldKind, value: string) {
+  for (const e of data.value) {
+    if (kind === 'department' && e.department === value) e.department = ''
+    if (kind === 'position' && e.position === value) e.position = ''
+  }
+  if (kind === 'department') {
+    bulkDepartmentAddedOptions.value = bulkDepartmentAddedOptions.value.filter((d) => d !== value)
+    if (bulkDepartmentSelected.value === value) bulkDepartmentSelected.value = ''
+  } else {
+    bulkPositionAddedOptions.value = bulkPositionAddedOptions.value.filter((p) => p !== value)
+    if (bulkPositionSelected.value === value) bulkPositionSelected.value = ''
+  }
+}
+
+function requestDeleteBulkOrgField(kind: BulkOrgFieldKind, value: string) {
+  const outsiders = countBulkOrgFieldUsersOutsideSelection(kind, value)
+  if (outsiders > 0) {
+    bulkOrgDeletePending.value = { kind, value, outsidersCount: outsiders }
+    bulkOrgDeleteConfirmOpen.value = true
+    return
+  }
+  clearBulkOrgFieldFromEmployees(kind, value)
+}
+
+function confirmDeleteBulkOrgField() {
+  const pending = bulkOrgDeletePending.value
+  if (!pending) return
+  if (pending.kind === 'tag') {
+    removeTagFromAllEmployees(pending.value)
+  } else {
+    clearBulkOrgFieldFromEmployees(pending.kind, pending.value)
+  }
+  bulkOrgDeleteConfirmOpen.value = false
+  bulkOrgDeletePending.value = null
+}
+
+function cancelDeleteBulkOrgField() {
+  bulkOrgDeleteConfirmOpen.value = false
+  bulkOrgDeletePending.value = null
+}
+
+function startBulkOrgEdit(kind: BulkOrgFieldKind, value: string) {
+  bulkOrgEditing.value = { kind, value }
+  bulkOrgEditDraft.value = value
+}
+
+function cancelBulkOrgEdit() {
+  bulkOrgEditing.value = null
+  bulkOrgEditDraft.value = ''
+}
+
+function commitBulkOrgEdit() {
+  const editing = bulkOrgEditing.value
+  if (!editing) return
+  const newValue = bulkOrgEditDraft.value.trim()
+  if (!newValue) {
+    cancelBulkOrgEdit()
+    return
+  }
+  renameBulkOrgField(editing.kind, editing.value, newValue)
+  cancelBulkOrgEdit()
+}
+
+const bulkOrgEditCanSave = computed(
+  () => bulkOrgEditing.value !== null && bulkOrgEditDraft.value.trim().length > 0,
 )
 
 function resetBulkMassForm() {
@@ -1550,8 +1792,12 @@ function resetBulkMassForm() {
   bulkTagsInput.value = ''
   bulkDepartmentCustom.value = ''
   bulkDepartmentSelected.value = ''
+  bulkDepartmentAddedOptions.value = []
   bulkPositionCustom.value = ''
   bulkPositionSelected.value = ''
+  bulkPositionAddedOptions.value = []
+  cancelBulkOrgEdit()
+  cancelDeleteBulkOrgField()
 }
 
 function commitBulkTagsFromInput() {
@@ -1596,17 +1842,42 @@ function toggleBulkCommonTag(tag: string) {
   }
 }
 
-function resolveBulkSingleFieldValue(custom: string, selected: string): string {
-  const c = custom.trim()
-  if (c) return c
-  return selected.trim()
+/** Значение для «Применить»: приоритет у выбора в списке, иначе текст в поле ввода. */
+function resolveBulkApplyValue(custom: string, selected: string): string {
+  const s = selected.trim()
+  if (s) return s
+  return custom.trim()
+}
+
+function getBulkTargetEmployeeRows() {
+  void rowSelection.value
+  return table.getSelectedRowModel().rows
+}
+
+function commitBulkOrgPendingCustomBeforeSubmit() {
+  const kind = bulkMassPlaceholderKind.value
+  if (kind === 'department') {
+    const custom = bulkDepartmentCustom.value.trim()
+    if (custom && !bulkDepartmentSelected.value.trim()) {
+      bulkDepartmentSelected.value = custom
+      bulkDepartmentCustom.value = ''
+    }
+    return
+  }
+  if (kind === 'position') {
+    const custom = bulkPositionCustom.value.trim()
+    if (custom && !bulkPositionSelected.value.trim()) {
+      bulkPositionSelected.value = custom
+      bulkPositionCustom.value = ''
+    }
+  }
 }
 
 function applyBulkMassToSelectedEmployees() {
   const kind = bulkMassPlaceholderKind.value
   if (!kind) return false
 
-  const rows = table.getFilteredSelectedRowModel().rows
+  const rows = getBulkTargetEmployeeRows()
   if (rows.length === 0) return false
 
   if (kind === 'tags') {
@@ -1624,8 +1895,8 @@ function applyBulkMassToSelectedEmployees() {
 
   const value =
     kind === 'department'
-      ? resolveBulkSingleFieldValue(bulkDepartmentCustom.value, bulkDepartmentSelected.value)
-      : resolveBulkSingleFieldValue(bulkPositionCustom.value, bulkPositionSelected.value)
+      ? resolveBulkApplyValue(bulkDepartmentCustom.value, bulkDepartmentSelected.value)
+      : resolveBulkApplyValue(bulkPositionCustom.value, bulkPositionSelected.value)
 
   if (!value) return false
 
@@ -1642,11 +1913,29 @@ function applyBulkMassToSelectedEmployees() {
 }
 
 function submitBulkMassDialog() {
-  if (bulkMassPlaceholderKind.value === 'tags') {
+  const kind = bulkMassPlaceholderKind.value
+  if (!kind) return
+
+  if (kind === 'tags') {
     commitBulkTagsFromInputIfPending()
+  } else {
+    commitBulkOrgPendingCustomBeforeSubmit()
   }
-  if (!applyBulkMassToSelectedEmployees()) return
-  bulkMassPlaceholderOpen.value = false
+
+  if (applyBulkMassToSelectedEmployees()) {
+    bulkMassPlaceholderOpen.value = false
+    return
+  }
+
+  if (getBulkTargetEmployeeRows().length === 0) {
+    toast.error('Нет выбранных пользователей.')
+    return
+  }
+  if (kind === 'tags') {
+    toast.error('Добавьте хотя бы один тег.')
+    return
+  }
+  toast.error('Выберите пункт в списке или введите значение в поле выше.')
 }
 
 const connectProductsEmployee = computed(() => {
@@ -1664,47 +1953,51 @@ const connectProductsFilteredPlans = computed(() => {
   })
 })
 
-const connectProductsSelectAllModel = computed({
-  get(): boolean | 'indeterminate' {
-    void connectProductsSelectedCodes.value
-    void connectProductsPlanFilter.value
-    const rows = connectProductsFilteredPlans.value
-    if (rows.length === 0) return false
-    const selected = connectProductsSelectedCodes.value
-    const picked = rows.filter((r) => selected.includes(r.code)).length
-    if (picked === 0) return false
-    if (picked === rows.length) return true
-    return 'indeterminate'
-  },
-  set(value: boolean | 'indeterminate') {
-    const codes = connectProductsFilteredPlans.value.map((r) => r.code)
-    const on = value === true || value === 'indeterminate'
-    if (on) {
-      const set = new Set(connectProductsSelectedCodes.value)
-      let skipped = 0
-      for (const code of codes) {
-        if (set.has(code)) continue
-        const plan = ADD_USER_PLAN_CATALOG.find((r) => r.code === code)
-        if (!plan) continue
-        if (connectProductsWouldExceedLimit(plan)) {
-          skipped += 1
-          continue
-        }
-        set.add(code)
-      }
-      connectProductsSelectedCodes.value = [...set]
-      if (skipped > 0) {
-        toast.warning('Часть подписок не выбрана: нет свободных мест по лимиту подключений.')
-      }
-    } else {
-      // Снять выделение со всех элементов в списке
-      const drop = new Set(codes)
-      connectProductsSelectedCodes.value = connectProductsSelectedCodes.value.filter(
-        (c) => !drop.has(c),
-      )
-    }
-  },
+const connectProductsSelectAllModel = computed((): boolean | 'indeterminate' => {
+  void connectProductsSelectedCodes.value
+  void connectProductsPlanFilter.value
+  const rows = connectProductsFilteredPlans.value
+  const selectable = rows.filter((r) => !isConnectProductsPlanCheckboxDisabled(r.code))
+  if (selectable.length === 0) return false
+  const selected = connectProductsSelectedCodes.value
+  const picked = selectable.filter((r) => selected.includes(r.code)).length
+  if (picked === 0) return false
+  if (picked === selectable.length) return true
+  return 'indeterminate'
 })
+
+function toggleConnectProductsSelectAll() {
+  const rows = connectProductsFilteredPlans.value
+  const codes = rows.map((r) => r.code)
+  const selectableCodes = codes.filter((code) => !isConnectProductsPlanCheckboxDisabled(code))
+  const selected = connectProductsSelectedCodes.value
+  const allSelectablePicked =
+    selectableCodes.length > 0
+    && selectableCodes.every((code) => selected.includes(code))
+
+  if (allSelectablePicked) {
+    const drop = new Set(codes)
+    connectProductsSelectedCodes.value = selected.filter((c) => !drop.has(c))
+    return
+  }
+
+  const set = new Set(selected)
+  let skipped = 0
+  for (const code of selectableCodes) {
+    if (set.has(code)) continue
+    const plan = ADD_USER_PLAN_CATALOG.find((r) => r.code === code)
+    if (!plan) continue
+    if (connectProductsWouldExceedLimit(plan)) {
+      skipped += 1
+      continue
+    }
+    set.add(code)
+  }
+  connectProductsSelectedCodes.value = [...set]
+  if (skipped > 0) {
+    toast.warning('Часть подписок не выбрана: нет свободных мест по лимиту подключений.')
+  }
+}
 
 function applyPlanCodesToEmployeeRow(row: Employee, planCodes: string[]) {
   row.subscriptionStack =
@@ -2982,7 +3275,7 @@ watch(bulkMassPlaceholderOpen, (open) => {
       <DialogContent
         class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 flex max-h-[min(90dvh,880px)] w-[calc(100vw-2rem)] max-w-lg translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden rounded-xl bg-background p-0 shadow-foreground-5 outline-none duration-200"
       >
-        <div class="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
+        <div class="flex shrink-0 items-start justify-between border-b border-border px-4 py-3">
           <DialogTitle class="text-base font-medium text-foreground">
             {{ userFormDialogMode === 'edit' ? 'Изменить данные пользователя' : 'Добавить пользователя' }}
           </DialogTitle>
@@ -3353,7 +3646,7 @@ watch(bulkMassPlaceholderOpen, (open) => {
       <DialogContent
         class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 flex max-h-[min(90dvh,880px)] w-[calc(100vw-2rem)] max-w-[min(480px,calc(100vw-2rem))] translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden rounded-xl bg-background p-0 shadow-foreground-5 outline-none duration-200"
       >
-        <div class="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
+        <div class="flex shrink-0 items-start justify-between border-b border-border px-4 py-3">
           <div class="min-w-0 flex-1 pr-2">
             <DialogTitle class="text-base font-medium text-foreground">
               {{ connectProductsBulkMode ? 'Подписки для выбранных' : 'Добавить подписку' }}
@@ -3398,20 +3691,27 @@ watch(bulkMassPlaceholderOpen, (open) => {
                 autocomplete="off"
               />
             </div>
-            <label
-              class="flex min-h-10 cursor-pointer items-center justify-between gap-3 rounded-md border border-border bg-muted/30 px-2 py-2"
-            >
-              <span class="text-sm font-medium text-foreground">Выбрать все</span>
-              <Checkbox v-model="connectProductsSelectAllModel" aria-label="Выбрать все подписки в списке" />
-            </label>
             <ScrollArea class="h-72 w-full">
               <div class="flex flex-col gap-0.5 pr-1">
                 <label
+                  class="grid min-h-13 cursor-pointer grid-cols-[minmax(0,1fr)_max-content_1.25rem] items-center gap-x-4 rounded-md px-2 py-1.5 hover:bg-muted"
+                >
+                  <span class="truncate text-sm font-medium text-foreground">Выбрать все</span>
+                  <span aria-hidden="true" />
+                  <Checkbox
+                    :model-value="connectProductsSelectAllModel"
+                    class="size-4 shrink-0 justify-self-center"
+                    aria-label="Выбрать все подписки в списке"
+                    @update:model-value="toggleConnectProductsSelectAll"
+                    @click.stop
+                  />
+                </label>
+                <label
                   v-for="row in connectProductsFilteredPlans"
                   :key="`connect-${row.code}`"
-                  class="flex min-h-[3.25rem] cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 text-left hover:bg-muted"
+                  class="grid min-h-13 cursor-pointer grid-cols-[minmax(0,1fr)_max-content_1.25rem] items-center gap-x-4 rounded-md px-2 py-1.5 hover:bg-muted"
                 >
-                  <span class="flex min-w-0 flex-1 items-center gap-2">
+                  <span class="flex min-w-0 items-center gap-2">
                     <span
                       class="relative box-border flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-sm"
                       :class="addUserPlanIconBgClass[row.icon]"
@@ -3426,7 +3726,7 @@ watch(bulkMassPlaceholderOpen, (open) => {
                     <span class="truncate text-sm font-medium text-foreground">{{ row.code }}</span>
                   </span>
                   <span
-                    class="text-muted-foreground shrink-0 whitespace-nowrap text-right text-xs leading-none"
+                    class="text-muted-foreground w-max max-w-full shrink-0 whitespace-nowrap text-right text-xs leading-none"
                   >
                     <span>Лимиты подключений </span>
                     <span class="tabular-nums text-foreground">
@@ -3445,7 +3745,7 @@ watch(bulkMassPlaceholderOpen, (open) => {
                   <Checkbox
                     :model-value="connectProductsSelectedCodes.includes(row.code)"
                     :disabled="isConnectProductsPlanCheckboxDisabled(row.code)"
-                    class="mr-1 shrink-0"
+                    class="size-4 shrink-0 justify-self-center"
                     :aria-label="`Подписка ${row.code}`"
                     @update:model-value="(v) => toggleConnectProductsPlan(row.code, !!v)"
                     @click.stop
@@ -3478,7 +3778,7 @@ watch(bulkMassPlaceholderOpen, (open) => {
       <DialogContent
         class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-50 flex max-h-[min(90dvh,880px)] w-[calc(100vw-2rem)] max-w-[min(480px,calc(100vw-2rem))] translate-x-[-50%] translate-y-[-50%] flex-col overflow-hidden rounded-xl bg-background p-0 shadow-foreground-5 outline-none duration-200"
       >
-        <div class="flex shrink-0 items-center justify-between border-b border-border px-4 py-3">
+        <div class="flex shrink-0 items-start justify-between border-b border-border px-4 py-3">
           <div class="min-w-0 flex-1 pr-2">
             <DialogTitle class="text-base font-medium text-foreground">
               Для выбранных: {{ bulkMassPlaceholderTitle }}
@@ -3510,9 +3810,6 @@ watch(bulkMassPlaceholderOpen, (open) => {
 
         <div class="flex min-h-0 flex-1 flex-col overflow-hidden px-4 py-3">
           <template v-if="bulkMassPlaceholderKind === 'tags'">
-            <p class="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
-              Добавить теги
-            </p>
             <div
               role="group"
               aria-label="Поле ввода тегов"
@@ -3544,28 +3841,40 @@ watch(bulkMassPlaceholderOpen, (open) => {
               >
             </div>
 
-            <p class="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
-              Общие теги
-            </p>
             <p class="text-muted-foreground mb-2 text-xs leading-snug">
               Уже используются у других пользователей — нажмите, чтобы добавить в список.
             </p>
-            <ScrollArea class="max-h-48 w-full">
+            <ScrollArea class="h-48 w-full">
               <div class="flex flex-wrap gap-1.5 pr-2 pb-1">
-                <button
+                <div
                   v-for="tag in bulkCommonTags"
                   :key="`bulk-common-${tag}`"
-                  type="button"
-                  :class="cn(
-                    'rounded-md border px-2.5 py-1 text-xs font-medium transition-colors',
-                    bulkTagsChips.includes(tag)
-                      ? 'border-primary bg-primary/10 text-foreground'
-                      : 'border-border bg-background text-foreground hover:bg-muted',
-                  )"
-                  @click="toggleBulkCommonTag(tag)"
+                  class="group/tag inline-flex items-stretch overflow-hidden rounded-md border"
+                  :class="bulkTagsChips.includes(tag)
+                    ? 'border-primary'
+                    : 'border-border'"
                 >
-                  {{ tag }}
-                </button>
+                  <button
+                    type="button"
+                    :class="cn(
+                      'px-2.5 py-1 text-xs font-medium transition-colors',
+                      bulkTagsChips.includes(tag)
+                        ? 'bg-primary/10 text-foreground'
+                        : 'bg-background text-foreground hover:bg-muted',
+                    )"
+                    @click="toggleBulkCommonTag(tag)"
+                  >
+                    {{ tag }}
+                  </button>
+                  <button
+                    type="button"
+                    class="inline-flex w-6 shrink-0 items-center justify-center border-l border-border bg-background text-destructive opacity-0 transition-opacity hover:bg-destructive/5 hover:text-destructive group-hover/tag:opacity-100"
+                    :aria-label="`Удалить тег «${tag}»`"
+                    @click.stop="requestDeleteBulkCommonTag(tag)"
+                  >
+                    <X class="size-3.5 shrink-0" aria-hidden="true" />
+                  </button>
+                </div>
                 <p
                   v-if="bulkCommonTags.length === 0"
                   class="text-muted-foreground text-sm"
@@ -3577,35 +3886,114 @@ watch(bulkMassPlaceholderOpen, (open) => {
           </template>
 
           <template v-else-if="bulkMassPlaceholderKind === 'department'">
-            <p class="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
-              Новый отдел
-            </p>
-            <Input
-              v-model="bulkDepartmentCustom"
-              variant="default"
+            <InputGroup
               class="mb-4 h-10"
-              placeholder="Введите название, если нет в списке"
-              autocomplete="organization"
-              @input="bulkDepartmentSelected = ''"
-            />
+              :class="bulkOrgIsEditing ? 'pointer-events-none opacity-50' : undefined"
+            >
+              <InputGroupInput
+                v-model="bulkDepartmentCustom"
+                placeholder="Введите название, если нет в списке"
+                autocomplete="organization"
+                :disabled="bulkOrgIsEditing"
+                @update:model-value="bulkDepartmentSelected = ''"
+                @keydown.enter.prevent="addBulkDepartmentFromInput"
+              />
+              <InputGroupAddon
+                v-if="bulkDepartmentCustom.trim() && !bulkOrgIsEditing"
+                align="inline-end"
+              >
+                <InputGroupButton
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  @click="addBulkDepartmentFromInput"
+                >
+                  Добавить
+                </InputGroupButton>
+              </InputGroupAddon>
+            </InputGroup>
 
-            <p class="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
-              Уже в организации
-            </p>
-            <ScrollArea class="max-h-56 w-full">
+            <ScrollArea
+              ref="bulkDepartmentListScrollRef"
+              class="h-56 w-full"
+            >
               <RadioGroup
                 v-model="bulkDepartmentSelected"
                 class="flex flex-col gap-1 pr-2"
                 @update:model-value="bulkDepartmentCustom = ''"
               >
-                <label
+                <component
+                  :is="isBulkOrgEditing('department', dept) ? 'div' : 'label'"
                   v-for="dept in bulkDepartmentOptions"
                   :key="`bulk-dept-${dept}`"
-                  class="flex min-h-10 cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 hover:bg-muted"
+                  class="group/row flex min-h-10 items-center gap-3 rounded-md px-2 py-1.5 hover:bg-muted"
+                  :class="isBulkOrgEditing('department', dept) ? '' : 'cursor-pointer'"
                 >
-                  <RadioGroupItem :value="dept" />
-                  <span class="text-sm text-foreground">{{ dept }}</span>
-                </label>
+                  <template v-if="isBulkOrgEditing('department', dept)">
+                    <div
+                      class="flex min-w-0 flex-1 items-center gap-1"
+                      @click.stop
+                    >
+                      <Input
+                        v-model="bulkOrgEditDraft"
+                        variant="default"
+                        class="h-9 min-w-0 flex-1"
+                        autocomplete="organization"
+                        @keydown.enter.prevent="commitBulkOrgEdit"
+                        @keydown.escape.prevent="cancelBulkOrgEdit"
+                      />
+                      <Button
+                        type="button"
+                        variant="default"
+                        size="icon"
+                        class="size-7 shrink-0"
+                        aria-label="Сохранить"
+                        :disabled="!bulkOrgEditCanSave"
+                        @click="commitBulkOrgEdit"
+                      >
+                        <Check />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        class="size-7 shrink-0"
+                        aria-label="Отменить"
+                        @click="cancelBulkOrgEdit"
+                      >
+                        <X />
+                      </Button>
+                    </div>
+                  </template>
+                  <template v-else>
+                    <RadioGroupItem :value="dept" />
+                    <span class="min-w-0 flex-1 truncate text-sm text-foreground">{{ dept }}</span>
+                    <div
+                      class="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/row:opacity-100"
+                    >
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        class="size-7 shrink-0"
+                        :aria-label="`Изменить отдел «${dept}»`"
+                        @click.stop="startBulkOrgEdit('department', dept)"
+                      >
+                        <Pencil />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        class="size-7 shrink-0 text-destructive hover:bg-destructive/5 hover:text-destructive"
+                        :aria-label="`Удалить отдел «${dept}»`"
+                        @click.stop="requestDeleteBulkOrgField('department', dept)"
+                      >
+                        <X />
+                      </Button>
+                    </div>
+                  </template>
+                </component>
               </RadioGroup>
               <p
                 v-if="bulkDepartmentOptions.length === 0"
@@ -3617,35 +4005,114 @@ watch(bulkMassPlaceholderOpen, (open) => {
           </template>
 
           <template v-else-if="bulkMassPlaceholderKind === 'position'">
-            <p class="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
-              Новая должность
-            </p>
-            <Input
-              v-model="bulkPositionCustom"
-              variant="default"
+            <InputGroup
               class="mb-4 h-10"
-              placeholder="Введите название, если нет в списке"
-              autocomplete="organization-title"
-              @input="bulkPositionSelected = ''"
-            />
+              :class="bulkOrgIsEditing ? 'pointer-events-none opacity-50' : undefined"
+            >
+              <InputGroupInput
+                v-model="bulkPositionCustom"
+                placeholder="Введите название, если нет в списке"
+                autocomplete="organization-title"
+                :disabled="bulkOrgIsEditing"
+                @update:model-value="bulkPositionSelected = ''"
+                @keydown.enter.prevent="addBulkPositionFromInput"
+              />
+              <InputGroupAddon
+                v-if="bulkPositionCustom.trim() && !bulkOrgIsEditing"
+                align="inline-end"
+              >
+                <InputGroupButton
+                  type="button"
+                  variant="default"
+                  size="sm"
+                  @click="addBulkPositionFromInput"
+                >
+                  Добавить
+                </InputGroupButton>
+              </InputGroupAddon>
+            </InputGroup>
 
-            <p class="text-muted-foreground mb-2 text-xs font-medium uppercase tracking-wide">
-              Уже в организации
-            </p>
-            <ScrollArea class="max-h-56 w-full">
+            <ScrollArea
+              ref="bulkPositionListScrollRef"
+              class="h-56 w-full"
+            >
               <RadioGroup
                 v-model="bulkPositionSelected"
                 class="flex flex-col gap-1 pr-2"
                 @update:model-value="bulkPositionCustom = ''"
               >
-                <label
+                <component
+                  :is="isBulkOrgEditing('position', pos) ? 'div' : 'label'"
                   v-for="pos in bulkPositionOptions"
                   :key="`bulk-pos-${pos}`"
-                  class="flex min-h-10 cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 hover:bg-muted"
+                  class="group/row flex min-h-10 items-center gap-3 rounded-md px-2 py-1.5 hover:bg-muted"
+                  :class="isBulkOrgEditing('position', pos) ? '' : 'cursor-pointer'"
                 >
-                  <RadioGroupItem :value="pos" />
-                  <span class="text-sm text-foreground">{{ pos }}</span>
-                </label>
+                  <template v-if="isBulkOrgEditing('position', pos)">
+                    <div
+                      class="flex min-w-0 flex-1 items-center gap-1"
+                      @click.stop
+                    >
+                      <Input
+                        v-model="bulkOrgEditDraft"
+                        variant="default"
+                        class="h-9 min-w-0 flex-1"
+                        autocomplete="organization-title"
+                        @keydown.enter.prevent="commitBulkOrgEdit"
+                        @keydown.escape.prevent="cancelBulkOrgEdit"
+                      />
+                      <Button
+                        type="button"
+                        variant="default"
+                        size="icon"
+                        class="size-7 shrink-0"
+                        aria-label="Сохранить"
+                        :disabled="!bulkOrgEditCanSave"
+                        @click="commitBulkOrgEdit"
+                      >
+                        <Check />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        class="size-7 shrink-0"
+                        aria-label="Отменить"
+                        @click="cancelBulkOrgEdit"
+                      >
+                        <X />
+                      </Button>
+                    </div>
+                  </template>
+                  <template v-else>
+                    <RadioGroupItem :value="pos" />
+                    <span class="min-w-0 flex-1 truncate text-sm text-foreground">{{ pos }}</span>
+                    <div
+                      class="flex shrink-0 items-center gap-0.5 opacity-0 transition-opacity group-hover/row:opacity-100"
+                    >
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        class="size-7 shrink-0"
+                        :aria-label="`Изменить должность «${pos}»`"
+                        @click.stop="startBulkOrgEdit('position', pos)"
+                      >
+                        <Pencil />
+                      </Button>
+                      <Button
+                        type="button"
+                        variant="ghost"
+                        size="icon"
+                        class="size-7 shrink-0 text-destructive hover:bg-destructive/5 hover:text-destructive"
+                        :aria-label="`Удалить должность «${pos}»`"
+                        @click.stop="requestDeleteBulkOrgField('position', pos)"
+                      >
+                        <X />
+                      </Button>
+                    </div>
+                  </template>
+                </component>
               </RadioGroup>
               <p
                 v-if="bulkPositionOptions.length === 0"
@@ -3665,6 +4132,63 @@ watch(bulkMassPlaceholderOpen, (open) => {
           </DialogClose>
           <Button type="button" class="h-9 px-3" @click="submitBulkMassDialog">
             Применить
+          </Button>
+        </div>
+      </DialogContent>
+    </DialogPortal>
+  </DialogRoot>
+
+  <DialogRoot v-model:open="bulkOrgDeleteConfirmOpen">
+    <DialogPortal>
+      <DialogOverlay
+        class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0 fixed inset-0 z-60 bg-foreground/50"
+      />
+      <DialogContent
+        class="data-[state=open]:animate-in data-[state=closed]:animate-out data-[state=closed]:fade-out-0 data-[state=closed]:zoom-out-95 data-[state=open]:fade-in-0 data-[state=open]:zoom-in-95 fixed top-[50%] left-[50%] z-60 flex w-[calc(100vw-2rem)] max-w-md translate-x-[-50%] translate-y-[-50%] flex-col gap-4 rounded-xl bg-background p-4 shadow-foreground-5 outline-none duration-200"
+      >
+        <div class="flex flex-col gap-2">
+          <DialogTitle class="text-base font-medium text-foreground">
+            <template v-if="bulkOrgDeletePending">
+              Удалить {{ bulkDeleteFieldLabel(bulkOrgDeletePending.kind) }}?
+            </template>
+          </DialogTitle>
+          <DialogDescription
+            v-if="bulkOrgDeletePending"
+            class="text-muted-foreground text-sm leading-relaxed"
+          >
+            <template v-if="bulkOrgDeletePending.kind === 'tag'">
+              Тег «{{ bulkOrgDeletePending.value }}» ещё используется у
+              {{ bulkOrgDeletePending.outsidersCount }}
+              {{ pluralizeUsers(bulkOrgDeletePending.outsidersCount) }},
+              не входящих в текущий выбор. При удалении тег будет снят у всех
+              пользователей организации.
+            </template>
+            <template v-else>
+              {{ bulkDeleteFieldLabel(bulkOrgDeletePending.kind) }}
+              «{{ bulkOrgDeletePending.value }}» ещё используется у
+              {{ bulkOrgDeletePending.outsidersCount }}
+              {{ pluralizeUsers(bulkOrgDeletePending.outsidersCount) }},
+              не входящих в текущий выбор. При удалении значение будет снято у всех
+              пользователей организации.
+            </template>
+          </DialogDescription>
+        </div>
+        <div class="flex justify-end gap-2">
+          <Button
+            type="button"
+            variant="outline"
+            class="h-9 bg-background px-3"
+            @click="cancelDeleteBulkOrgField"
+          >
+            Отменить
+          </Button>
+          <Button
+            type="button"
+            variant="destructive"
+            class="h-9 px-3"
+            @click="confirmDeleteBulkOrgField"
+          >
+            Удалить
           </Button>
         </div>
       </DialogContent>
