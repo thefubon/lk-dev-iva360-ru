@@ -43,6 +43,17 @@ export default defineConfig({
     coverage: {
       enabled: true,
       provider: 'v8',
+      include: [
+        'src/shared/lib/utils.ts',
+        'src/shared/lib/ru-phone-input-mask.ts',
+        'src/widgets/app-shell/app-sidebar-nav-active.ts',
+        'src/widgets/app-shell/app-sidebar-nav.config.ts',
+      ],
+      exclude: [
+        '**/*.d.ts',
+        '**/*.test.ts',
+        '**/*.spec.ts',
+      ],
       thresholds: {
         lines: 70,
         functions: 70,
