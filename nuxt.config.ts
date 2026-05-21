@@ -100,4 +100,10 @@ export default defineNuxtConfig({
   imports: {
     dirs: ['app/composables'],
   },
+
+  runtimeConfig: {
+    dadataApiKey: process.env.DADATA_API_KEY ?? '',
+    dadataSecretKey: process.env.DADATA_SECRET_KEY ?? '',
+  },
+
 })

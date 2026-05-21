@@ -18,13 +18,13 @@ const props = withDefaults(defineProps<PrimitiveProps & {
     data-sidebar="menu-action"
     :class="cn(
       'text-sidebar-foreground hover:bg-sidebar-accent hover:text-foreground-hover peer-hover/menu-button:text-foreground-hover absolute top-1.5 right-1 flex aspect-square w-5 items-center justify-center rounded-md p-0 outline-hidden transition-transform [&>svg]:size-4 [&>svg]:shrink-0',
-      'after:absolute after:-inset-2 md:after:hidden',
+      'after:absolute after:-inset-2 lg:after:hidden',
       'peer-data-[size=sm]/menu-button:top-1',
       'peer-data-[size=default]/menu-button:top-1.5',
       'peer-data-[size=lg]/menu-button:top-2.5',
       'group-data-[collapsible=icon]/sidebar:hidden',
       showOnHover
-        && 'peer-data-[active=true]/menu-button:text-sidebar-accent-foreground group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 md:opacity-0',
+        && 'peer-data-[active=true]/menu-button:text-sidebar-accent-foreground group-focus-within/menu-item:opacity-100 group-hover/menu-item:opacity-100 data-[state=open]:opacity-100 lg:opacity-0',
       props.class,
     )"
     :as="as"

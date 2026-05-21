@@ -2,9 +2,9 @@
 import type { HTMLAttributes, Ref } from "vue"
 import { defaultDocument, useEventListener, useMediaQuery, useVModel } from "@vueuse/core"
 import { TooltipProvider } from "reka-ui"
-import { computed, ref } from "vue"
+import { computed, ref, watch } from "vue"
 import { cn } from '@lib/utils'
-import { provideSidebarContext, SIDEBAR_COOKIE_MAX_AGE, SIDEBAR_COOKIE_NAME, SIDEBAR_KEYBOARD_SHORTCUT, SIDEBAR_WIDTH, SIDEBAR_WIDTH_ICON } from "./utils"
+import { provideSidebarContext, SIDEBAR_COOKIE_MAX_AGE, SIDEBAR_COOKIE_NAME, SIDEBAR_KEYBOARD_SHORTCUT, SIDEBAR_MOBILE_BREAKPOINT, SIDEBAR_WIDTH, SIDEBAR_WIDTH_ICON } from "./utils"
 
 const props = withDefaults(defineProps<{
   defaultOpen?: boolean
@@ -19,7 +19,7 @@ const emits = defineEmits<{
   "update:open": [open: boolean]
 }>()
 
-const isMobile = useMediaQuery("(max-width: 767px)")
+const isMobile = useMediaQuery(`(max-width: ${SIDEBAR_MOBILE_BREAKPOINT - 1}px)`)
 const openMobile = ref(false)
 
 const open = useVModel(props, "open", emits, {
@@ -38,6 +38,11 @@ function setOpen(value: boolean) {
 function setOpenMobile(value: boolean) {
   openMobile.value = value
 }
+
+watch(isMobile, (mobile) => {
+  if (!mobile)
+    setOpenMobile(false)
+})
 
 // Helper to toggle the sidebar.
 function toggleSidebar() {

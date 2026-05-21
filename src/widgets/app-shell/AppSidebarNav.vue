@@ -17,10 +17,19 @@ import {
   productNavSubTreeGuideClass,
   sidebarNavRowBaseClass,
 } from './app-sidebar-nav-product-surface'
+import {
+  applySavedOpenSections,
+  loadSidebarExpandedGroups,
+  persistSidebarOpenSections,
+} from '@lib/sidebar/sidebar-expanded-groups'
 import { cn } from '@lib/utils'
 import { SidebarSeparator, useSidebar } from '@/shared/ui/sidebar'
 
-const SIDEBAR_SECTIONS_STORAGE_KEY = 'lk:sidebar:open-sections'
+const props = withDefaults(defineProps<{
+  menuConfig?: SidebarNavEntry[]
+}>(), {
+  menuConfig: () => navMenuConfig,
+})
 
 function isNavLinkItem(entry: SidebarNavEntry): entry is SidebarNavMenuItem {
   return entry.type === 'item'
@@ -30,9 +39,9 @@ function isExpandable(item: SidebarNavMenuItem): boolean {
   return Boolean(item.children?.length || item.expandable)
 }
 
-function defaultOpenSections(): Record<string, boolean> {
+function defaultOpenSections(config: SidebarNavEntry[]): Record<string, boolean> {
   const state: Record<string, boolean> = {}
-  for (const entry of navMenuConfig) {
+  for (const entry of config) {
     if (!isNavLinkItem(entry) || !isExpandable(entry)) continue
     state[entry.key] = Boolean(entry.defaultOpen)
   }
@@ -42,9 +51,10 @@ function defaultOpenSections(): Record<string, boolean> {
 function mergeInitialOpenWithActive(
   base: Record<string, boolean>,
   active: string | null,
+  config: SidebarNavEntry[],
 ): Record<string, boolean> {
   const next = { ...base }
-  for (const entry of navMenuConfig) {
+  for (const entry of config) {
     if (!isNavLinkItem(entry) || !entry.children?.length) continue
     const childMatch = entry.children.some(
       c => !c.disabled && Boolean(c.href) && c.href === active,
@@ -110,7 +120,7 @@ function subItemIsActive(sub: SidebarNavSubItem, activeHref: MaybeRefOrGetter<st
 const route = useRoute()
 const { isMobile, setOpenMobile } = useSidebar()
 
-const hrefs = computed(() => collectMenuHrefs(navMenuConfig))
+const hrefs = computed(() => collectMenuHrefs(props.menuConfig))
 const activeHref = computed(() => getActiveHref(route.path, hrefs.value))
 
 function navEntryAriaCurrent(entry: SidebarNavMenuItem): 'page' | undefined {
@@ -134,20 +144,14 @@ function toggleSection(key: string) {
 }
 
 onMounted(() => {
-  const base = defaultOpenSections()
-  try {
-    const stored = localStorage.getItem(SIDEBAR_SECTIONS_STORAGE_KEY)
-    if (stored) {
-      const parsed = JSON.parse(stored) as Record<string, unknown>
-      const def = defaultOpenSections()
-      for (const k of Object.keys(def)) {
-        if (typeof parsed[k] === 'boolean') base[k] = parsed[k] as boolean
-      }
-    }
-  } catch {
-    /* keep defaults */
-  }
-  openSections.value = mergeInitialOpenWithActive(base, activeHref.value)
+  const defaults = defaultOpenSections(props.menuConfig)
+  const saved = loadSidebarExpandedGroups()
+  const withSaved = applySavedOpenSections(defaults, saved, props.menuConfig)
+  openSections.value = mergeInitialOpenWithActive(
+    withSaved,
+    activeHref.value,
+    props.menuConfig,
+  )
   isHydrated.value = true
   requestAnimationFrame(() => {
     animReady.value = true
@@ -156,20 +160,16 @@ onMounted(() => {
 
 watch(
   openSections,
-  (v) => {
+  (sections) => {
     if (!isHydrated.value) return
-    try {
-      localStorage.setItem(SIDEBAR_SECTIONS_STORAGE_KEY, JSON.stringify(v))
-    } catch {
-      /* ignore */
-    }
+    persistSidebarOpenSections(sections, props.menuConfig)
   },
   { deep: true },
 )
 
 watch(activeHref, (href) => {
   if (!isHydrated.value) return
-  for (const entry of navMenuConfig) {
+  for (const entry of props.menuConfig) {
     if (!isNavLinkItem(entry) || !entry.children?.length) continue
     const childMatch = entry.children.some(
       c => !c.disabled && Boolean(c.href) && c.href === href,
@@ -190,7 +190,7 @@ watch(activeHref, (href) => {
     )"
   >
     <nav class="flex flex-col gap-1.5" aria-label="Основное меню">
-      <template v-for="entry in navMenuConfig" :key="entry.key">
+      <template v-for="entry in menuConfig" :key="entry.key">
         <div
           v-if="entry.type === 'divider'"
           class="flex w-full shrink-0 flex-col py-2"

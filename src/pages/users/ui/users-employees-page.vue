@@ -100,11 +100,19 @@ import {
   productIconUrlsDefault,
   type ProductIconKey,
 } from '@/widgets/app-shell/app-sidebar-nav-product-icons'
+import { AdminPageSection } from '@/widgets/admin-page-section'
+
+const { isAdminRoute, appPath, isAppPathActive } = useAppRoute()
 
 const USERS_ROUTES = {
   employees: '/users/employees',
   products: '/users/products',
 } as const
+
+const usersTabRoutes = computed(() => ({
+  employees: isAdminRoute.value ? '/admin/users' : USERS_ROUTES.employees,
+  products: isAdminRoute.value ? '/admin/users/products' : USERS_ROUTES.products,
+}))
 
 const COLUMN_LABELS: Record<string, string> = {
   fullName: 'Имя / Фамилия',
@@ -2131,12 +2139,30 @@ watch(bulkMassPlaceholderOpen, (open) => {
     resetBulkMassForm()
   }
 })
+
 </script>
 
 <template>
-  <main class="container mx-auto flex min-h-0 flex-1 flex-col gap-4 px-6 py-6">
+  <main
+    :class="cn(
+      'container mx-auto flex min-h-0 flex-1 flex-col',
+      isAdminRoute ? 'gap-6 px-4 py-4' : 'gap-4 px-6 py-6',
+    )"
+  >
     <header class="flex flex-col gap-4">
       <div
+        v-if="isAdminRoute"
+        class="flex min-w-0 flex-col gap-2"
+      >
+        <h1 class="text-2xl font-semibold tracking-tight text-foreground">
+          Пользователи
+        </h1>
+        <p class="text-muted-foreground text-sm leading-relaxed">
+          Управление учётными записями и лицензиями
+        </p>
+      </div>
+      <div
+        v-else
         class="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between sm:gap-6"
       >
         <div class="flex min-w-0 flex-1 flex-col gap-2">
@@ -2257,7 +2283,7 @@ watch(bulkMassPlaceholderOpen, (open) => {
 
           <div
             v-if="headerFilterScrollArrows.showLeft"
-            class="pointer-events-none absolute inset-y-0 left-0 z-10 flex w-14 items-center justify-start bg-gradient-to-r from-muted/95 via-muted/50 to-transparent pl-0.5 backdrop-blur-sm opacity-0 transition-opacity duration-200 group-hover/header-filter-toolbar:opacity-100 group-focus-within/header-filter-toolbar:opacity-100"
+            class="pointer-events-none absolute inset-y-0 left-0 z-10 hidden w-14 items-center justify-start bg-gradient-to-r from-muted/95 via-muted/50 to-transparent pl-0.5 backdrop-blur-sm opacity-0 transition-opacity duration-200 group-hover/header-filter-toolbar:opacity-100 group-focus-within/header-filter-toolbar:opacity-100 md:flex"
           >
             <Button
               type="button"
@@ -2272,7 +2298,7 @@ watch(bulkMassPlaceholderOpen, (open) => {
           </div>
           <div
             v-if="headerFilterScrollArrows.showRight"
-            class="pointer-events-none absolute inset-y-0 right-0 z-10 flex w-14 items-center justify-end bg-gradient-to-l from-muted/95 via-muted/50 to-transparent pr-0.5 backdrop-blur-sm opacity-0 transition-opacity duration-200 group-hover/header-filter-toolbar:opacity-100 group-focus-within/header-filter-toolbar:opacity-100"
+            class="pointer-events-none absolute inset-y-0 right-0 z-10 hidden w-14 items-center justify-end bg-gradient-to-l from-muted/95 via-muted/50 to-transparent pr-0.5 backdrop-blur-sm opacity-0 transition-opacity duration-200 group-hover/header-filter-toolbar:opacity-100 group-focus-within/header-filter-toolbar:opacity-100 md:flex"
           >
             <Button
               type="button"
@@ -2289,8 +2315,9 @@ watch(bulkMassPlaceholderOpen, (open) => {
       </div>
     </header>
 
-    <div
-      class="relative flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-background p-4"
+    <component
+      :is="isAdminRoute ? AdminPageSection : 'div'"
+      :class="isAdminRoute ? 'gap-6' : 'relative flex min-w-0 flex-col gap-4 rounded-xl border border-border bg-background p-4'"
     >
       <Transition
         enter-active-class="transition duration-200 ease-out"
@@ -2303,7 +2330,12 @@ watch(bulkMassPlaceholderOpen, (open) => {
         <div
           v-if="showEmployeeBulkBar"
           key="employee-bulk-bar"
-          class="absolute top-4 inset-x-4 z-30 flex min-h-10 flex-wrap items-center justify-between gap-3 rounded-lg bg-slate-800 px-3 py-2 text-white shadow-sm dark:bg-slate-900"
+          :class="cn(
+            'absolute z-30 flex min-h-10 flex-wrap items-center justify-between gap-3 bg-slate-800 text-white shadow-sm dark:bg-slate-900',
+            isAdminRoute
+              ? '-top-4 -right-4 -left-4 rounded-t-xl px-4 py-2'
+              : 'top-4 inset-x-4 rounded-lg px-3 py-2',
+          )"
           role="toolbar"
           :aria-label="`Панель массовых действий. Выбрано сотрудников: ${selectedEmployeesCount}. Изменения по кнопкам применяются ко всем отмеченным строкам: подписки, отдел, должность, теги.`"
         >
@@ -2416,43 +2448,43 @@ watch(bulkMassPlaceholderOpen, (open) => {
           aria-label="Подраздел пользователей"
         >
           <NuxtLink
-            :to="USERS_ROUTES.employees"
+            :to="appPath(usersTabRoutes.employees)"
             class="inline-flex w-fit shrink-0 flex-col items-stretch gap-1 outline-none"
           >
             <span
               :class="cn(
                 'inline-flex min-h-9 items-center justify-center rounded-md px-2.5 py-1.5 text-center text-sm font-medium leading-snug transition-colors',
-                route.path === USERS_ROUTES.employees
+                isAppPathActive(usersTabRoutes.employees)
                   ? 'bg-muted text-foreground'
                   : 'text-foreground hover:bg-muted/60',
               )"
             >
-              Сотрудники
+              {{ isAdminRoute ? 'Управление пользователями' : 'Сотрудники' }}
             </span>
             <span
               aria-hidden="true"
               class="relative z-10 -mb-px h-0.5 shrink-0 rounded-full transition-colors"
-              :class="route.path === USERS_ROUTES.employees ? 'bg-primary' : 'bg-transparent'"
+              :class="isAppPathActive(usersTabRoutes.employees) ? 'bg-primary' : 'bg-transparent'"
             />
           </NuxtLink>
           <NuxtLink
-            :to="USERS_ROUTES.products"
+            :to="appPath(usersTabRoutes.products)"
             class="inline-flex w-fit shrink-0 flex-col items-stretch gap-1 outline-none"
           >
             <span
               :class="cn(
                 'inline-flex min-h-9 items-center justify-center rounded-md px-2.5 py-1.5 text-center text-sm font-medium leading-snug transition-colors',
-                route.path === USERS_ROUTES.products
+                isAppPathActive(usersTabRoutes.products)
                   ? 'bg-muted text-foreground'
                   : 'text-foreground hover:bg-muted/60',
               )"
             >
-              Управление подписками
+              {{ isAdminRoute ? 'Управление подписками' : 'Подписки' }}
             </span>
             <span
               aria-hidden="true"
               class="relative z-10 -mb-px h-0.5 shrink-0 rounded-full transition-colors"
-              :class="route.path === USERS_ROUTES.products ? 'bg-primary' : 'bg-transparent'"
+              :class="isAppPathActive(usersTabRoutes.products) ? 'bg-primary' : 'bg-transparent'"
             />
           </NuxtLink>
         </nav>
@@ -3020,63 +3052,63 @@ watch(bulkMassPlaceholderOpen, (open) => {
           </Table>
         </div>
       </div>
-    </div>
 
-    <div
-      class="flex flex-col gap-3 px-0 py-3 sm:flex-row sm:items-center sm:justify-between"
-    >
-      <p class="text-foreground text-sm">
-        {{ userListSummary }}
-      </p>
-      <div class="flex items-center gap-6">
-        <div class="flex items-center gap-2">
-          <Button
-            variant="white"
-            size="sm"
-            class="hover:bg-background"
-            :disabled="!table.getCanPreviousPage()"
-            aria-label="Предыдущая страница"
-            @click="table.previousPage()"
-          >
-            <ChevronLeft class="size-4" />
-          </Button>
-          <span class="text-foreground shrink-0 rounded-md bg-muted/40 px-1 py-1 text-center text-sm leading-none tabular-nums">
-            {{ table.getState().pagination.pageIndex + 1 }} из {{ table.getPageCount() }}
-          </span>
-          <Button
-            variant="white"
-            size="sm"
-            class="hover:bg-background"
-            :disabled="!table.getCanNextPage()"
-            aria-label="Следующая страница"
-            @click="table.nextPage()"
-          >
-            <ChevronRight class="size-4" />
-          </Button>
-        </div>
-        <Select
-          :model-value="String(table.getState().pagination.pageSize)"
-          @update:model-value="onPageSizeSelect"
-        >
-          <SelectTrigger
-            size="sm"
-            class="min-w-17 shrink-0 border-border bg-background shadow-none hover:bg-background dark:hover:bg-background"
-            aria-label="Количество строк на странице"
-          >
-            <SelectValue />
-          </SelectTrigger>
-          <SelectContent align="end">
-            <SelectItem
-              v-for="opt in PAGE_SIZE_OPTIONS"
-              :key="opt"
-              :value="String(opt)"
+      <div
+        class="flex flex-col gap-3 border-t border-border pt-4 sm:flex-row sm:items-center sm:justify-between"
+      >
+        <p class="text-foreground text-sm">
+          {{ userListSummary }}
+        </p>
+        <div class="flex items-center gap-6">
+          <div class="flex items-center gap-2">
+            <Button
+              variant="white"
+              size="sm"
+              class="hover:bg-background"
+              :disabled="!table.getCanPreviousPage()"
+              aria-label="Предыдущая страница"
+              @click="table.previousPage()"
             >
-              {{ opt }}
-            </SelectItem>
-          </SelectContent>
-        </Select>
+              <ChevronLeft class="size-4" />
+            </Button>
+            <span class="text-foreground shrink-0 px-1 py-1 text-center text-sm leading-none tabular-nums">
+              {{ table.getState().pagination.pageIndex + 1 }} из {{ table.getPageCount() }}
+            </span>
+            <Button
+              variant="white"
+              size="sm"
+              class="hover:bg-background"
+              :disabled="!table.getCanNextPage()"
+              aria-label="Следующая страница"
+              @click="table.nextPage()"
+            >
+              <ChevronRight class="size-4" />
+            </Button>
+          </div>
+          <Select
+            :model-value="String(table.getState().pagination.pageSize)"
+            @update:model-value="onPageSizeSelect"
+          >
+            <SelectTrigger
+              size="sm"
+              class="min-w-17 shrink-0 border-border bg-background shadow-none hover:bg-background dark:hover:bg-background"
+              aria-label="Количество строк на странице"
+            >
+              <SelectValue />
+            </SelectTrigger>
+            <SelectContent align="end">
+              <SelectItem
+                v-for="opt in PAGE_SIZE_OPTIONS"
+                :key="opt"
+                :value="String(opt)"
+              >
+                {{ opt }}
+              </SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
       </div>
-    </div>
+    </component>
   </main>
 
   <Sheet :open="sheetEmployee != null" @update:open="onEmployeeSheetOpenChange">

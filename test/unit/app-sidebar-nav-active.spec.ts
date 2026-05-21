@@ -30,6 +30,7 @@ describe('getActiveHref', () => {
   it('does not treat / as prefix of other routes', () => {
     expect(getActiveHref('/company', hrefs)).toBe('/company')
     expect(getActiveHref('/users/employees', hrefs)).toBe('/users/employees')
+    expect(getActiveHref('/users/products', hrefs)).toBe('/users/products')
     expect(getActiveHref('/billing/products', hrefs)).toBe('/billing/products')
     expect(getActiveHref('/billing/orders', hrefs)).toBe('/billing/orders')
     expect(getActiveHref('/meetings/webinars', hrefs)).toBe('/meetings/webinars')
@@ -38,8 +39,9 @@ describe('getActiveHref', () => {
   })
 
   it('picks longest matching prefix', () => {
-    const list = ['/users', '/users/employees']
+    const list = ['/users', '/users/employees', '/users/products']
     expect(getActiveHref('/users/employees', list)).toBe('/users/employees')
+    expect(getActiveHref('/users/products', list)).toBe('/users/products')
     expect(getActiveHref('/users/other', list)).toBe('/users')
   })
 })

@@ -11,10 +11,12 @@ const props = withDefaults(
   { billing: false },
 )
 
-const EMPLOYEES_PATH = '/users/employees'
-const PRODUCTS_PATH_USERS = '/users/products'
+const { isAdminRoute, appPath, isAppPathActive } = useAppRoute()
 
-const route = useRoute()
+const usersTabRoutes = computed(() => ({
+  employees: isAdminRoute.value ? '/admin/users' : '/users/employees',
+  products: isAdminRoute.value ? '/admin/users/products' : '/users/products',
+}))
 
 const isBillingProductsContext = computed(() => props.billing)
 
@@ -48,43 +50,43 @@ const introText = computed(() =>
         :aria-label="subNavAriaLabel"
       >
         <NuxtLink
-          :to="EMPLOYEES_PATH"
+          :to="appPath(usersTabRoutes.employees)"
           class="inline-flex w-fit shrink-0 flex-col items-stretch gap-1 outline-none"
         >
           <span
             :class="cn(
               'inline-flex min-h-9 items-center justify-center rounded-md px-2.5 py-1.5 text-center text-sm font-medium leading-snug transition-colors',
-              route.path === EMPLOYEES_PATH
+              isAppPathActive(usersTabRoutes.employees)
                 ? 'bg-muted text-foreground'
                 : 'text-foreground hover:bg-muted/60',
             )"
           >
-            Сотрудники
+            {{ isAdminRoute ? 'Управление пользователями' : 'Сотрудники' }}
           </span>
           <span
             aria-hidden="true"
             class="relative z-10 -mb-px h-0.5 shrink-0 rounded-full transition-colors"
-            :class="route.path === EMPLOYEES_PATH ? 'bg-primary' : 'bg-transparent'"
+            :class="isAppPathActive(usersTabRoutes.employees) ? 'bg-primary' : 'bg-transparent'"
           />
         </NuxtLink>
         <NuxtLink
-          :to="PRODUCTS_PATH_USERS"
+          :to="appPath(usersTabRoutes.products)"
           class="inline-flex w-fit shrink-0 flex-col items-stretch gap-1 outline-none"
         >
           <span
             :class="cn(
               'inline-flex min-h-9 items-center justify-center rounded-md px-2.5 py-1.5 text-center text-sm font-medium leading-snug transition-colors',
-              route.path === PRODUCTS_PATH_USERS
+              isAppPathActive(usersTabRoutes.products)
                 ? 'bg-muted text-foreground'
                 : 'text-foreground hover:bg-muted/60',
             )"
           >
-            Управление подписками
+            {{ isAdminRoute ? 'Управление подписками' : 'Подписки' }}
           </span>
           <span
             aria-hidden="true"
             class="relative z-10 -mb-px h-0.5 shrink-0 rounded-full transition-colors"
-            :class="route.path === PRODUCTS_PATH_USERS ? 'bg-primary' : 'bg-transparent'"
+            :class="isAppPathActive(usersTabRoutes.products) ? 'bg-primary' : 'bg-transparent'"
           />
         </NuxtLink>
       </nav>

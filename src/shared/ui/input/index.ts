@@ -9,7 +9,7 @@ const inputBase =
 export const inputVariants = cva(inputBase, {
   variants: {
     variant: {
-      default: "border-input hover:border-secondary focus:border-primary active:border-input",
+      default: "border-input hover:border-primary focus:border-primary focus-visible:border-primary active:border-input",
       primary: "border-input hover:border-primary focus:border-primary active:border-primary",
       secondary:
         "border-transparent bg-muted placeholder:text-secondary hover:bg-background hover:border-primary focus:bg-background focus:border-primary active:bg-background active:border-primary aria-invalid:bg-background data-[state=error]:bg-background data-[state=warning]:bg-background data-[state=success]:bg-background",

@@ -1,23 +1,26 @@
 <script setup lang="ts">
+import { computed } from 'vue'
 import { cn } from '@lib/utils'
 
-const sections = [
+const { appPath } = useAppRoute()
+
+const sections = computed(() => [
   {
-    to: '/integration/api',
+    to: appPath('/integration/api'),
     title: 'Настройки API',
     description: 'Ключи и вызовы API для связки с внешними системами.',
   },
   {
-    to: '/integration/ldap',
+    to: appPath('/integration/ldap'),
     title: 'Настройки LDAP',
     description: 'Синхронизация каталога и вход по корпоративной учётной записи.',
   },
   {
-    to: '/integration/sso',
+    to: appPath('/integration/sso'),
     title: 'Настройки SSO',
     description: 'Единый вход через провайдера удостоверений.',
   },
-] as const
+] as const)
 
 useSeoMeta({
   title: 'Интеграции',

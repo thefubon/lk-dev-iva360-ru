@@ -161,7 +161,6 @@ export const navMenuConfig: SidebarNavEntry[] = [
     key: 'products-orders',
     title: 'Подписки и заказы',
     icon: Blocks,
-    defaultOpen: true,
     children: [
       /** Отдельный URL от «Пользователи → Подписки» (`/users/products`), чтобы активный пункт и контекст раздела не дублировались. */
       { title: 'Мои продукты', href: '/billing/products' },

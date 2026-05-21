@@ -12,10 +12,13 @@ import {
   useSidebar,
 } from '@/shared/ui/sidebar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
+import { useAppMode } from '@lib/use-app-mode'
+import { adminNavMenuConfig } from './app-sidebar-admin-nav.config'
 import AppSidebarNav from './AppSidebarNav.vue'
 import Iva360Logo from './Iva360Logo.vue'
 
 const { isMobile, state } = useSidebar()
+const { isAdminMode } = useAppMode()
 
 function onInstallApp() {
   toast.message('Установить приложение', {
@@ -35,7 +38,8 @@ function onInstallApp() {
     </SidebarHeader>
 
     <SidebarContent class="gap-0">
-      <AppSidebarNav />
+      <AppSidebarNav v-if="!isAdminMode" />
+      <AppSidebarNav v-else :menu-config="adminNavMenuConfig" />
     </SidebarContent>
 
     <SidebarFooter class="shrink-0 gap-2 p-2">

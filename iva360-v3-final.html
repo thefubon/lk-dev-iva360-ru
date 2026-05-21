@@ -1,0 +1,1742 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>IVA 360 — Личный кабинет</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+
+/* ── THEMES ─────────────────────────── */
+:root{
+  --font:'Inter',sans-serif;--mono:'JetBrains Mono',monospace;
+  --r:10px;--rs:6px;--rl:14px;
+}
+/* USER THEME — light */
+body.user-mode{
+  --bg:#f4f6f8;--bg2:#ffffff;--bg3:#f0f2f5;--bg4:#e8eaed;--bg5:#dde0e5;
+  --line:rgba(0,0,0,.08);--line2:rgba(0,0,0,.12);--line3:rgba(0,0,0,.18);
+  --txt:#1a1d23;--txt2:#5a6070;--txt3:#9ba3b0;
+  --blue:#3b82f6;--blue2:#2563eb;--teal:#00b08b;--teal2:#009474;
+  --purple:#7c3aed;--amber:#d97706;--red:#dc2626;--green:#16a34a;--pink:#db2777;
+  --sb-bg:#ffffff;--sb-border:rgba(0,0,0,.08);
+  --hdr-bg:#ffffff;--hdr-border:rgba(0,0,0,.08);
+}
+/* ADMIN THEME — dark */
+body.admin-mode{
+  --bg:#0b0d12;--bg2:#111420;--bg3:#181c28;--bg4:#1f2436;--bg5:#252a3d;
+  --line:rgba(255,255,255,.06);--line2:rgba(255,255,255,.10);--line3:rgba(255,255,255,.16);
+  --txt:#e8ebf5;--txt2:#8892b0;--txt3:#4a5175;
+  --blue:#4d7fff;--blue2:#3a6de8;--teal:#14c9a8;--teal2:#0ea68e;
+  --purple:#8b5cf6;--amber:#f59e0b;--red:#ef4444;--green:#10b981;--pink:#ec4899;
+  --sb-bg:#111420;--sb-border:rgba(255,255,255,.06);
+  --hdr-bg:#111420;--hdr-border:rgba(255,255,255,.06);
+}
+
+body{font-family:var(--font);background:var(--bg);color:var(--txt);min-height:100vh;overflow-x:hidden;font-size:14px;line-height:1.5;transition:background .25s,color .25s}
+
+/* ── LAYOUT ─────────────────────────── */
+.shell{display:flex;height:100vh;overflow:hidden}
+.sidebar{width:240px;background:var(--sb-bg);border-right:1px solid var(--sb-border);display:flex;flex-direction:column;flex-shrink:0;overflow-y:auto;transition:background .25s,border-color .25s;position:relative}
+.main{flex:1;display:flex;flex-direction:column;overflow:hidden;min-width:0}
+.hdr{height:52px;background:var(--hdr-bg);border-bottom:1px solid var(--hdr-border);display:flex;align-items:center;padding:0 20px;gap:12px;flex-shrink:0;transition:background .25s}
+.body{flex:1;overflow-y:auto;padding:28px 28px 60px}
+
+/* ── PROFILE SWITCHER ───────────────── */
+.prof-bar{padding:10px 10px 8px;border-bottom:1px solid var(--sb-border);flex-shrink:0;position:relative}
+.prof-cur{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--rs);cursor:pointer;transition:background .15s}
+.prof-cur:hover{background:var(--bg3)}
+.prof-av{width:30px;height:30px;border-radius:8px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;position:relative;transition:all .18s}
+.mode-dot{position:absolute;bottom:-2px;right:-2px;width:9px;height:9px;border-radius:50%;border:1.5px solid var(--sb-bg)}
+.prof-info{flex:1;min-width:0}
+.prof-info .pi-n{font-size:12.5px;font-weight:600;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.prof-info .pi-s{font-size:10px;color:var(--txt3);margin-top:1px}
+.prof-chev{color:var(--txt3);font-size:10px;flex-shrink:0;transition:transform .2s}
+.prof-cur.open .prof-chev{transform:rotate(180deg)}
+
+.prof-drop{position:absolute;top:calc(100% - 2px);left:8px;right:8px;background:var(--bg4);border:1px solid var(--line2);border-radius:var(--r);z-index:200;box-shadow:0 12px 40px rgba(0,0,0,.25);overflow:hidden;display:none}
+body.admin-mode .prof-drop{box-shadow:0 12px 40px rgba(0,0,0,.7)}
+.prof-drop.on{display:block;animation:fdrop .18s cubic-bezier(.34,1.4,.64,1)}
+@keyframes fdrop{from{opacity:0;transform:translateY(-6px)}to{opacity:1;transform:translateY(0)}}
+.pd-sec{padding:6px 6px 4px}
+.pd-lbl{font-size:9px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:1px;padding:0 6px;margin-bottom:4px}
+.pd-item{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--rs);cursor:pointer;transition:background .12s}
+.pd-item:hover{background:var(--bg5)}
+.pd-item.cur{background:rgba(59,130,246,.1)}
+body.admin-mode .pd-item.cur{background:rgba(77,127,255,.1)}
+.pd-av{width:28px;height:28px;border-radius:7px;display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0}
+.pd-ii{flex:1;min-width:0}
+.pd-ii .pii-n{font-size:12px;font-weight:500;color:var(--txt);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.pd-ii .pii-r{font-size:10px;color:var(--txt3);margin-top:1px}
+.pd-div{height:1px;background:var(--line);margin:4px 6px}
+.pd-act{display:flex;align-items:center;gap:8px;padding:7px 8px;border-radius:var(--rs);cursor:pointer;font-size:12px;color:var(--txt2);transition:background .12s}
+.pd-act:hover{background:var(--bg5);color:var(--txt)}
+
+/* ── MODE SWITCHER ──────────────────── */
+.mode-bar{padding:5px 10px;border-bottom:1px solid var(--sb-border);display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.mode-track{display:flex;background:var(--bg3);border-radius:20px;padding:2px;gap:1px}
+.mode-opt{padding:4px 10px;border-radius:18px;font-size:10px;font-weight:600;cursor:pointer;transition:all .2s;color:var(--txt3);white-space:nowrap;border:none;background:none;font-family:var(--font)}
+.mode-opt.on{background:var(--blue);color:#fff;box-shadow:0 1px 4px rgba(77,127,255,.4)}
+body.user-mode .mode-opt.on{background:var(--teal);box-shadow:0 1px 4px rgba(0,176,139,.4)}
+
+/* ── UNIFIED BANNER ─────────────────── */
+.unified-bar{padding:5px 16px;display:flex;align-items:center;gap:10px;font-size:11.5px;flex-shrink:0;
+  background:linear-gradient(90deg,rgba(139,92,246,.12),rgba(77,127,255,.08));
+  border-bottom:1px solid rgba(139,92,246,.2);color:#c4b5fd}
+body.user-mode .unified-bar{background:linear-gradient(90deg,rgba(0,176,139,.1),rgba(59,130,246,.06));border-bottom:1px solid rgba(0,176,139,.2);color:var(--teal)}
+.ub-dot{width:17px;height:17px;border-radius:4px;display:flex;align-items:center;justify-content:center;font-size:9px;font-weight:700;border:1.5px solid rgba(255,255,255,.15)}
+
+/* ── NAV ────────────────────────────── */
+.nav-sec{padding:12px 10px 4px}
+.nav-lbl{font-size:9px;font-weight:600;color:var(--txt3);letter-spacing:1.2px;text-transform:uppercase;padding:0 6px;margin-bottom:3px;display:flex;align-items:center;gap:6px}
+/* Stage badges */
+.stage{display:inline-flex;align-items:center;justify-content:center;width:16px;height:16px;border-radius:4px;font-size:8px;font-weight:700;flex-shrink:0}
+.s1{background:rgba(0,176,139,.2);color:var(--teal)}
+.s2{background:rgba(77,127,255,.2);color:var(--blue)}
+.s3{background:rgba(139,92,246,.2);color:var(--purple)}
+.s4{background:rgba(245,158,11,.2);color:var(--amber)}
+.ni{display:flex;align-items:center;gap:7px;padding:6px 10px;border-radius:var(--rs);cursor:pointer;font-size:12.5px;color:var(--txt2);transition:all .12s;border:none;background:none;width:100%;text-align:left;white-space:nowrap;position:relative}
+.ni:hover{background:var(--bg3);color:var(--txt)}
+.ni.on{background:rgba(0,176,139,.1);color:var(--teal)}
+body.admin-mode .ni.on{background:rgba(77,127,255,.13);color:var(--blue)}
+.ni.on::before{content:'';position:absolute;left:0;top:50%;transform:translateY(-50%);width:2.5px;height:16px;background:var(--teal);border-radius:0 2px 2px 0}
+body.admin-mode .ni.on::before{background:var(--blue)}
+.ni svg{width:15px;height:15px;flex-shrink:0;opacity:.6}
+.ni.on svg{opacity:1}
+.ni-ext::after{content:'↗';font-size:10px;color:var(--txt3);margin-left:2px}
+.nb{margin-left:auto;font-size:9px;font-weight:600;padding:1px 6px;border-radius:10px}
+.nb-b{background:rgba(77,127,255,.2);color:var(--blue)}
+.nb-w{background:rgba(245,158,11,.2);color:var(--amber)}
+.nb-r{background:rgba(239,68,68,.2);color:var(--red)}
+
+/* ── HEADER ─────────────────────────── */
+.hdr-title{font-size:14px;font-weight:600}
+.hdr-bread{font-size:11px;color:var(--txt3);display:flex;align-items:center;gap:3px}
+.hdr-bread span{color:var(--txt2)}
+.hdr-right{margin-left:auto;display:flex;align-items:center;gap:8px}
+.hbtn{display:flex;align-items:center;justify-content:center;width:32px;height:32px;border-radius:var(--rs);border:none;background:transparent;color:var(--txt2);cursor:pointer;transition:all .12s;position:relative}
+.hbtn:hover{background:var(--bg3);color:var(--txt)}
+.av{width:30px;height:30px;border-radius:50%;background:linear-gradient(135deg,var(--purple),var(--blue));display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:600;color:#fff;cursor:pointer}
+.av-dot{position:absolute;top:5px;right:5px;width:6px;height:6px;background:var(--red);border-radius:50%;border:1.5px solid var(--hdr-bg)}
+
+/* ── BUTTONS ─────────────────────────── */
+.btn{display:inline-flex;align-items:center;gap:5px;padding:6px 13px;border-radius:var(--rs);font-size:12px;font-weight:500;cursor:pointer;border:none;transition:all .12s;font-family:var(--font)}
+.btn-p{background:var(--teal);color:#fff}.btn-p:hover{background:var(--teal2)}
+body.admin-mode .btn-p{background:var(--blue)}.body.admin-mode .btn-p:hover{background:var(--blue2)}
+.btn-s{background:var(--bg3);color:var(--txt2);border:1px solid var(--line2)}.btn-s:hover{background:var(--bg4);color:var(--txt)}
+.btn-g{background:transparent;color:var(--txt2);padding:6px 8px}.btn-g:hover{background:var(--bg3);color:var(--txt)}
+.btn-d{background:rgba(239,68,68,.12);color:var(--red);border:1px solid rgba(239,68,68,.2)}.btn-d:hover{background:rgba(239,68,68,.2)}
+.btn-teal{background:rgba(0,176,139,.15);color:var(--teal);border:1px solid rgba(0,176,139,.2)}.btn-teal:hover{background:rgba(0,176,139,.25)}
+
+/* ── PAGES ──────────────────────────── */
+.page{display:none;animation:fi .18s ease}.page.on{display:block}
+@keyframes fi{from{opacity:0;transform:translateY(4px)}to{opacity:1;transform:translateY(0)}}
+.ph{margin-bottom:24px;display:flex;align-items:flex-start;justify-content:space-between;gap:16px}
+.ph h1{font-size:18px;font-weight:600;letter-spacing:-.3px}
+.ph p{font-size:12px;color:var(--txt2);margin-top:3px;line-height:1.5;max-width:560px}
+.ph-act{display:flex;gap:8px;flex-shrink:0}
+
+/* ── CARDS ──────────────────────────── */
+.card{background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);padding:20px;transition:border-color .12s}
+.card:hover{border-color:var(--line2)}
+.ch{display:flex;align-items:flex-start;justify-content:space-between;margin-bottom:16px;gap:12px}
+.ct{font-size:13px;font-weight:600;color:var(--txt);display:flex;align-items:center;gap:6px}
+.csub{font-size:11px;color:var(--txt3);margin-top:2px}
+.g2{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+.g3{display:grid;grid-template-columns:repeat(3,1fr);gap:14px}
+.g4{display:grid;grid-template-columns:repeat(4,1fr);gap:14px}
+.sc{background:var(--bg3);border:1px solid var(--line);border-radius:var(--rs);padding:14px 16px}
+.sv{font-size:22px;font-weight:600;letter-spacing:-.5px;line-height:1;margin-bottom:4px}
+.sl{font-size:11px;color:var(--txt3)}
+.sd{font-size:11px;color:var(--green);margin-top:3px}
+.sd.dn{color:var(--red)}
+.sbar{height:4px;background:var(--bg5);border-radius:2px;margin-top:10px;overflow:hidden}
+.sfill{height:100%;border-radius:2px;transition:width .6s}
+
+/* ── TOGGLE ──────────────────────────── */
+.tog{display:inline-flex;align-items:center;cursor:pointer;user-select:none}
+.tog input{position:absolute;opacity:0;width:0;height:0;pointer-events:none}
+.tog-track{position:relative;width:36px;height:20px;background:var(--bg5);border-radius:10px;transition:background .2s;flex-shrink:0;cursor:pointer}
+.tog input:checked~.tog-track{background:var(--teal)}
+body.admin-mode .tog input:checked~.tog-track{background:var(--blue)}
+.tog-thumb{position:absolute;top:3px;left:3px;width:14px;height:14px;border-radius:50%;background:var(--txt3);transition:transform .2s,background .2s;pointer-events:none}
+.tog input:checked~.tog-track .tog-thumb{transform:translateX(16px);background:#fff}
+
+/* ── SETTINGS ROW ────────────────────── */
+.sr{display:flex;align-items:flex-start;justify-content:space-between;padding:13px 0;border-bottom:1px solid var(--line);gap:16px}
+.sr:last-child{border-bottom:none}
+.sr-info h4{font-size:13px;font-weight:500;color:var(--txt)}
+.sr-info p{font-size:11.5px;color:var(--txt3);line-height:1.4;margin-top:2px;max-width:380px}
+.sr-ctrl{flex-shrink:0;display:flex;align-items:center;gap:8px}
+
+/* ── TABS ────────────────────────────── */
+.tabs{display:flex;gap:2px;background:var(--bg3);border-radius:var(--rs);padding:3px;margin-bottom:20px;overflow-x:auto}
+.tab{flex:0 0 auto;padding:6px 14px;border-radius:5px;font-size:12px;font-weight:500;color:var(--txt2);cursor:pointer;transition:all .12s;border:none;background:none;font-family:var(--font);white-space:nowrap}
+.tab.on{background:var(--bg2);color:var(--txt);box-shadow:0 1px 3px rgba(0,0,0,.15)}
+body.admin-mode .tab.on{box-shadow:0 1px 3px rgba(0,0,0,.4)}
+.tc{display:none}.tc.on{display:block;animation:fi .15s ease}
+.tabs::-webkit-scrollbar{height:3px}
+
+/* ── TABLE ───────────────────────────── */
+.twrap{overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead tr{border-bottom:1px solid var(--line)}
+th{text-align:left;padding:8px 12px;font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;white-space:nowrap}
+td{padding:11px 12px;font-size:12.5px;color:var(--txt);border-bottom:1px solid var(--line);vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:rgba(0,0,0,.02)}
+body.admin-mode tr:hover td{background:rgba(255,255,255,.015)}
+
+/* ── TAGS ────────────────────────────── */
+.tag{display:inline-flex;align-items:center;gap:3px;padding:2px 7px;border-radius:20px;font-size:10.5px;font-weight:500;white-space:nowrap}
+.tb{background:rgba(59,130,246,.12);color:#2563eb}
+body.admin-mode .tb{background:rgba(77,127,255,.15);color:#7da3ff}
+.tg{background:rgba(22,163,74,.12);color:#15803d}
+body.admin-mode .tg{background:rgba(16,185,129,.15);color:#34d399}
+.tr{background:rgba(220,38,38,.1);color:#dc2626}
+body.admin-mode .tr{background:rgba(239,68,68,.15);color:#f87171}
+.ta{background:rgba(217,119,6,.1);color:#b45309}
+body.admin-mode .ta{background:rgba(245,158,11,.15);color:#fbbf24}
+.tp{background:rgba(124,58,237,.1);color:#7c3aed}
+body.admin-mode .tp{background:rgba(139,92,246,.15);color:#a78bfa}
+.tgr{background:rgba(0,0,0,.06);color:var(--txt3)}
+body.admin-mode .tgr{background:rgba(139,144,164,.1);color:var(--txt3)}
+.tc2{background:rgba(0,176,139,.12);color:#059669}
+body.admin-mode .tc2{background:rgba(20,201,168,.15);color:#2dd4c0}
+
+/* ── FORM ────────────────────────────── */
+.fg{margin-bottom:16px}
+.fl{font-size:11px;font-weight:500;color:var(--txt2);margin-bottom:5px;display:flex;align-items:center;gap:5px}
+.fi,.fs,.fta{width:100%;background:var(--bg3);border:1px solid var(--line2);border-radius:var(--rs);padding:8px 11px;color:var(--txt);font-size:12.5px;font-family:var(--font);outline:none;transition:border-color .12s}
+.fi:focus,.fs:focus,.fta:focus{border-color:var(--teal)}
+body.admin-mode .fi:focus,body.admin-mode .fs:focus,body.admin-mode .fta:focus{border-color:var(--blue)}
+.fi::placeholder,.fta::placeholder{color:var(--txt3)}
+.fh{font-size:10.5px;color:var(--txt3);margin-top:3px}
+.fta{resize:vertical}
+
+/* ── NOTICES ─────────────────────────── */
+.notice{display:flex;gap:8px;padding:10px 14px;border-radius:var(--rs);font-size:12px;margin-bottom:16px;line-height:1.4}
+.ni-inf{background:rgba(59,130,246,.08);border:1px solid rgba(59,130,246,.2);color:#1d4ed8}
+body.admin-mode .ni-inf{background:rgba(59,130,246,.1);color:#93c5fd}
+.ni-wrn{background:rgba(217,119,6,.08);border:1px solid rgba(217,119,6,.2);color:#92400e}
+body.admin-mode .ni-wrn{background:rgba(245,158,11,.1);color:#fcd34d}
+.ni-ok{background:rgba(22,163,74,.08);border:1px solid rgba(22,163,74,.2);color:#14532d}
+body.admin-mode .ni-ok{background:rgba(16,185,129,.1);color:#6ee7b7}
+
+/* ── MISC ────────────────────────────── */
+.div{height:1px;background:var(--line);margin:16px 0}
+.pr{height:5px;background:var(--bg5);border-radius:3px;overflow:hidden}
+.pf{height:100%;border-radius:3px;background:var(--teal);transition:width .5s}
+body.admin-mode .pf{background:var(--blue)}
+.mm{display:flex;align-items:center;justify-content:space-between;padding:9px 0;border-bottom:1px solid var(--line)}
+.mm:last-child{border-bottom:none}
+.mm-l{font-size:12px;color:var(--txt2)}
+.mm-v{font-size:12.5px;font-weight:600;color:var(--txt)}
+.hchip{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:10px;font-weight:600}
+.hc-ok{background:rgba(22,163,74,.1);color:#15803d}
+body.admin-mode .hc-ok{background:rgba(16,185,129,.15);color:var(--green)}
+.hc-wr{background:rgba(217,119,6,.1);color:#92400e}
+body.admin-mode .hc-wr{background:rgba(245,158,11,.15);color:var(--amber)}
+.ldap-pulse{width:10px;height:10px;border-radius:50%;flex-shrink:0;position:relative}
+.ldap-pulse.err{background:var(--red)}
+.ldap-pulse.ok{background:var(--green)}
+.ldap-pulse.ok::after{content:'';position:absolute;inset:-3px;border-radius:50%;border:1.5px solid var(--green);animation:pulse 2s infinite;opacity:.6}
+@keyframes pulse{0%,100%{transform:scale(1);opacity:.6}50%{transform:scale(1.4);opacity:0}}
+
+/* ── PAYERS ──────────────────────────── */
+.payer-card{background:var(--bg3);border:1.5px solid var(--line);border-radius:var(--r);padding:16px;position:relative;transition:all .18s}
+.payer-card.def{border-color:rgba(0,176,139,.4)}
+body.admin-mode .payer-card.def{border-color:rgba(20,201,168,.35)}
+.payer-pick{cursor:pointer}
+.payer-pick:hover{border-color:var(--line2)}
+.payer-pick.sel{border-color:var(--blue);background:rgba(77,127,255,.04)}
+body.user-mode .payer-pick.sel{border-color:var(--teal);background:rgba(0,176,139,.04)}
+
+/* ── ORDERS / INVOICES ───────────────── */
+.order-row{display:flex;align-items:center;gap:12px;padding:12px 8px;border-bottom:1px solid var(--line);cursor:pointer;transition:background .12s;border-radius:var(--rs)}
+.order-row:last-child{border-bottom:none}
+.order-row:hover{background:var(--bg3)}
+.ord-num{font-family:var(--mono);font-size:12px;color:var(--blue);font-weight:500;min-width:90px}
+.ord-info{flex:1}
+.ord-name{font-size:13px;font-weight:500}
+.ord-meta{font-size:11px;color:var(--txt3);margin-top:2px;display:flex;gap:8px;flex-wrap:wrap}
+.ord-amt{font-size:13px;font-weight:600;text-align:right;min-width:90px}
+.ord-amt-lbl{font-size:10px;color:var(--txt3);font-weight:400}
+.inv-card{background:var(--bg3);border:1px solid var(--line);border-radius:var(--rs);padding:14px;transition:border-color .15s}
+.inv-card:hover{border-color:var(--line2)}
+.inv-num{font-family:var(--mono);font-size:12px;font-weight:600;color:var(--blue)}
+.inv-amount{font-size:18px;font-weight:600;margin:8px 0 4px;letter-spacing:-.5px}
+
+/* ── DOCUMENTS ───────────────────────── */
+.doc-row{display:flex;align-items:center;gap:12px;padding:11px 0;border-bottom:1px solid var(--line)}
+.doc-row:last-child{border-bottom:none}
+.doc-icon{width:32px;height:32px;border-radius:var(--rs);display:flex;align-items:center;justify-content:center;font-size:16px;flex-shrink:0}
+
+/* ── ROLES MATRIX ────────────────────── */
+.role-pill{display:inline-flex;align-items:center;gap:6px;padding:6px 12px;border-radius:20px;cursor:pointer;font-size:12px;font-weight:500;border:1.5px solid var(--line2);color:var(--txt2);background:var(--bg3);transition:all .18s;user-select:none}
+.role-pill:hover{border-color:var(--line3);color:var(--txt)}
+.role-pill.active{border-color:currentColor}
+.rp-dot{width:8px;height:8px;border-radius:50%;flex-shrink:0}
+.rp-rm{margin-left:3px;opacity:0;transition:opacity .15s;font-size:14px;line-height:1}
+.role-pill.active:hover .rp-rm{opacity:.7}
+.rp-add{display:inline-flex;align-items:center;gap:5px;padding:6px 12px;border-radius:20px;cursor:pointer;font-size:12px;font-weight:500;border:1.5px dashed var(--line2);color:var(--txt3);background:transparent;transition:all .18s}
+.rp-add:hover{border-color:var(--blue);color:var(--blue)}
+.role-matrix{width:100%;border-collapse:collapse;table-layout:fixed}
+.role-matrix thead{position:sticky;top:0;z-index:5}
+.role-matrix th{padding:10px 8px;font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.5px;background:var(--bg2);border-bottom:2px solid var(--line2)}
+.role-matrix td{padding:10px 8px;border-bottom:1px solid var(--line);vertical-align:middle}
+.role-matrix tr:last-child td{border-bottom:none}
+.role-matrix tr:hover td{background:var(--bg3)}
+.cat-row td{background:var(--bg3)!important;padding:5px 14px!important;font-size:9.5px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--txt3)}
+@keyframes colIn{from{opacity:0;transform:translateX(16px)}to{opacity:1;transform:translateX(0)}}
+.col-enter{animation:colIn .28s cubic-bezier(.34,1.4,.64,1) forwards}
+.perm-icon{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:50%;font-size:13px;cursor:pointer;transition:transform .15s}
+.perm-icon:hover{transform:scale(1.15)}
+.perm-yes{background:rgba(22,163,74,.12);color:#15803d}
+body.admin-mode .perm-yes{background:rgba(16,185,129,.15);color:var(--green)}
+.perm-no{background:rgba(0,0,0,.05);color:var(--txt3)}
+body.admin-mode .perm-no{background:rgba(239,68,68,.1);color:rgba(239,68,68,.4)}
+.perm-part{background:rgba(217,119,6,.1);color:#b45309}
+body.admin-mode .perm-part{background:rgba(245,158,11,.15);color:var(--amber)}
+.compare-diff td{background:rgba(217,119,6,.05)!important}
+body.admin-mode .compare-diff td{background:rgba(245,158,11,.04)!important}
+.role-hdr-card{display:flex;flex-direction:column;align-items:center;gap:2px;padding:8px 6px;cursor:pointer;border-radius:var(--rs);transition:background .15s}
+.role-hdr-card:hover{background:var(--bg3)}
+.rh-av{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;margin-bottom:3px}
+.rh-name{font-size:11px;font-weight:600;text-align:center}
+.rh-count{font-size:10px;color:var(--txt3)}
+
+/* ── DRAWER ──────────────────────────── */
+.drawer-overlay{position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:300;opacity:0;pointer-events:none;transition:opacity .25s}
+body.admin-mode .drawer-overlay{background:rgba(0,0,0,.65)}
+.drawer-overlay.on{opacity:1;pointer-events:all}
+.drawer{position:fixed;right:0;top:0;height:100vh;width:480px;max-width:94vw;background:var(--bg2);border-left:1px solid var(--line2);z-index:301;transform:translateX(100%);transition:transform .3s cubic-bezier(.34,1.1,.64,1);display:flex;flex-direction:column;overflow:hidden}
+.drawer.on{transform:translateX(0)}
+.drawer-hdr{padding:18px 22px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:12px;flex-shrink:0}
+.drawer-title{font-size:15px;font-weight:600;flex:1}
+.drawer-body{flex:1;overflow-y:auto;padding:22px}
+.drawer-footer{padding:14px 22px;border-top:1px solid var(--line);display:flex;gap:8px;justify-content:flex-end;flex-shrink:0}
+.perm-btns{display:flex;gap:3px}
+.pb{width:28px;height:22px;border-radius:4px;border:1px solid var(--line2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all .12s;color:var(--txt3)}
+.pb.yes.active{background:rgba(22,163,74,.2);border-color:rgba(22,163,74,.4);color:var(--green)}
+.pb.part.active{background:rgba(217,119,6,.2);border-color:rgba(217,119,6,.4);color:var(--amber)}
+.pb.no.active{background:rgba(239,68,68,.15);border-color:rgba(239,68,68,.3);color:var(--red)}
+
+/* ── MODAL ───────────────────────────── */
+.modal-bg{display:none;position:fixed;inset:0;background:rgba(0,0,0,.5);z-index:400;align-items:center;justify-content:center}
+body.admin-mode .modal-bg{background:rgba(0,0,0,.75)}
+.modal-bg.on{display:flex}
+.modal{background:var(--bg2);border:1px solid var(--line2);border-radius:var(--rl);padding:24px;width:520px;max-width:94vw;animation:fi .15s ease;max-height:90vh;overflow-y:auto}
+.modal-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:18px}
+.modal-title{font-size:15px;font-weight:600}
+.modal-close{background:none;border:none;color:var(--txt2);cursor:pointer;font-size:18px;padding:2px 6px;border-radius:4px}
+.modal-close:hover{background:var(--bg3);color:var(--txt)}
+
+/* ── TARIFF CARDS ────────────────────── */
+.tariff-card{background:var(--bg3);border:1.5px solid var(--line);border-radius:var(--r);padding:20px;transition:all .18s;cursor:pointer}
+.tariff-card:hover{border-color:var(--teal);transform:translateY(-2px);box-shadow:0 8px 24px rgba(0,176,139,.1)}
+body.admin-mode .tariff-card:hover{border-color:var(--blue);box-shadow:0 8px 24px rgba(77,127,255,.1)}
+.tariff-card.current{border-color:var(--teal)}
+body.admin-mode .tariff-card.current{border-color:var(--blue)}
+.tariff-price{font-size:28px;font-weight:700;letter-spacing:-.5px;line-height:1}
+.tariff-per{font-size:12px;color:var(--txt3);margin-top:3px}
+.tariff-feature{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--txt2);padding:3px 0}
+.tariff-feature::before{content:'✓';color:var(--teal);font-weight:700;flex-shrink:0}
+body.admin-mode .tariff-feature::before{color:var(--green)}
+
+/* ── USER MODE SPECIFIC ──────────────── */
+.welcome-hero{background:linear-gradient(135deg,var(--teal),#2563eb);border-radius:var(--r);padding:24px;color:#fff;margin-bottom:20px;position:relative;overflow:hidden}
+.welcome-hero::before{content:'';position:absolute;right:-20px;top:-20px;width:120px;height:120px;border-radius:50%;background:rgba(255,255,255,.08)}
+.welcome-hero h2{font-size:18px;font-weight:600;margin-bottom:6px}
+.welcome-hero p{font-size:13px;opacity:.85}
+.quick-action{display:flex;flex-direction:column;align-items:center;gap:6px;padding:16px;background:var(--bg2);border:1px solid var(--line);border-radius:var(--r);cursor:pointer;transition:all .18s;text-align:center}
+.quick-action:hover{border-color:var(--teal);background:rgba(0,176,139,.04)}
+body.admin-mode .quick-action:hover{border-color:var(--blue);background:rgba(77,127,255,.04)}
+.quick-action-icon{width:40px;height:40px;border-radius:10px;display:flex;align-items:center;justify-content:center;font-size:18px;margin-bottom:2px}
+.quick-action-label{font-size:12px;font-weight:500;color:var(--txt)}
+.quick-action-sub{font-size:10.5px;color:var(--txt3)}
+
+/* ── APP PASSWORD ────────────────────── */
+.app-pass-row{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.app-pass-row:last-child{border-bottom:none}
+.app-pass-name{font-size:12.5px;font-weight:500;flex:1}
+.app-pass-meta{font-size:11px;color:var(--txt3)}
+
+/* ── OFFBOARDING ─────────────────────── */
+.ob-step{display:flex;gap:12px;padding:12px 0;position:relative}
+.ob-step::before{content:'';position:absolute;left:15px;top:36px;bottom:-12px;width:1px;background:var(--line)}
+.ob-step:last-child::before{display:none}
+.ob-icon{width:32px;height:32px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;flex-shrink:0;z-index:1}
+.ob-content h4{font-size:13px;font-weight:500;margin-bottom:3px}
+.ob-content p{font-size:11.5px;color:var(--txt3);line-height:1.4}
+
+/* ── GUIDE ───────────────────────────── */
+.guide-step{display:flex;gap:10px;padding:10px 0;border-bottom:1px solid var(--line)}
+.guide-step:last-child{border-bottom:none}
+.guide-n{width:22px;height:22px;border-radius:50%;background:rgba(77,127,255,.15);color:var(--blue);font-size:11px;font-weight:700;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:1px}
+body.user-mode .guide-n{background:rgba(0,176,139,.15);color:var(--teal)}
+.guide-text{font-size:12px;color:var(--txt2);line-height:1.5}
+.guide-text code{font-family:var(--mono);font-size:11px;background:var(--bg4);padding:1px 5px;border-radius:3px;color:var(--teal)}
+
+/* ── EMPTY STATE ─────────────────────── */
+.empty-box{text-align:center;padding:40px 20px;background:var(--bg3);border-radius:var(--r);border:2px dashed var(--amber)}
+.empty-box .ei{font-size:36px;margin-bottom:10px}
+.empty-box h3{font-size:15px;font-weight:600;margin-bottom:6px}
+.empty-box p{font-size:12.5px;color:var(--txt2);line-height:1.6;max-width:400px;margin:0 auto 16px}
+
+/* ── NOTIF ROW ───────────────────────── */
+.notif-row{display:flex;align-items:flex-start;gap:12px;padding:12px 0;border-bottom:1px solid var(--line)}
+.notif-row:last-child{border-bottom:none}
+
+/* SCROLLBAR */
+::-webkit-scrollbar{width:5px;height:5px}
+::-webkit-scrollbar-track{background:transparent}
+::-webkit-scrollbar-thumb{background:var(--bg5);border-radius:3px}
+
+/* ═══ STAGE LABELS — inline badge on menu items, items never hidden ═══ */
+.sl{display:inline-flex;align-items:center;justify-content:center;min-width:14px;height:14px;border-radius:3px;font-size:8px;font-weight:700;flex-shrink:0;padding:0 2px;margin-left:3px;vertical-align:middle}
+.sl1{background:rgba(0,176,139,.18);color:#009474}
+body.a .sl1{background:rgba(20,201,168,.2);color:#14c9a8}
+.sl2{background:rgba(59,130,246,.15);color:#2563eb}
+body.a .sl2{background:rgba(77,127,255,.2);color:#6699ff}
+.sl3{background:rgba(124,58,237,.15);color:#7c3aed}
+body.a .sl3{background:rgba(139,92,246,.2);color:#a78bfa}
+.sl4{background:rgba(217,119,6,.15);color:#b45309}
+body.a .sl4{background:rgba(245,158,11,.18);color:#f59e0b}
+/* Role hint block below user nav */
+.rh-hint{margin:6px 8px;padding:7px 10px;background:var(--acc-bg);border:1px solid rgba(0,176,139,.2);border-radius:6px;font-size:10.5px;color:var(--acc);display:flex;align-items:center;gap:6px}
+body.a .rh-hint{border-color:rgba(77,127,255,.2)}
+.rab-lbl{font-size:9px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.9px;padding:0 8px;margin-bottom:3px;margin-top:2px}
+</style>
+</head>
+<body class="admin-mode">
+<div class="shell">
+
+<!-- ════════ SIDEBAR ════════ -->
+<aside class="sidebar">
+
+  <!-- Profile Switcher -->
+  <div class="prof-bar">
+    <div class="prof-cur" id="prof-trigger" onclick="toggleProfDrop()">
+      <div class="prof-av" id="prof-av" style="background:linear-gradient(135deg,#4d7fff,#8b5cf6);">
+        <span id="prof-init">АС</span>
+        <div class="mode-dot" id="prof-mdot" style="background:#4d7fff"></div>
+      </div>
+      <div class="prof-info">
+        <div class="pi-n" id="prof-name-el">Александр Смирнов</div>
+        <div class="pi-s" id="prof-sub-el">Example Corp · Суперадмин</div>
+      </div>
+      <span class="prof-chev" id="prof-chev">▼</span>
+    </div>
+    <div class="prof-drop" id="prof-drop">
+      <div class="pd-sec">
+        <div class="pd-lbl">Профили <span style="color:var(--txt3);font-size:9px;">— как Google Workspace</span></div>
+        <div class="pd-item cur" onclick="switchProf(0)">
+          <div class="pd-av" style="background:rgba(77,127,255,.15);color:#7da3ff;font-size:11px;font-weight:700;">АС</div>
+          <div class="pd-ii"><div class="pii-n">Александр Смирнов</div><div class="pii-r">Example Corp · Суперадмин</div></div>
+          <span style="color:var(--blue);font-size:13px;">✓</span>
+        </div>
+        <div class="pd-item" onclick="switchProf(1)">
+          <div class="pd-av" style="background:rgba(20,201,168,.15);color:#2dd4c0;font-size:11px;font-weight:700;">АС</div>
+          <div class="pd-ii"><div class="pii-n">Александр Смирнов</div><div class="pii-r">TechStartup LLC · Пользователь</div></div>
+        </div>
+        <div class="pd-item" onclick="switchProf(2)">
+          <div class="pd-av" style="background:rgba(245,158,11,.15);color:#fbbf24;font-size:11px;font-weight:700;">АС</div>
+          <div class="pd-ii"><div class="pii-n">Александр Смирнов</div><div class="pii-r">FreeContract · Гость</div></div>
+        </div>
+      </div>
+      <div class="pd-div"></div>
+      <div class="pd-sec">
+        <div class="pd-item" onclick="toggleUnified()">
+          <div class="pd-av" style="background:linear-gradient(135deg,rgba(139,92,246,.2),rgba(77,127,255,.15));color:#a78bfa;font-size:14px;">⚡</div>
+          <div class="pd-ii"><div class="pii-n">Объединённый режим</div><div class="pii-r">Все профили сразу</div></div>
+          <span id="u-chk" style="display:none;color:var(--purple);font-size:13px;">✓</span>
+        </div>
+      </div>
+      <div class="pd-div"></div>
+      <div class="pd-sec">
+        <div class="pd-act" onclick="showModal('mod-add-profile')">
+          <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="7" cy="7" r="5.5" stroke="currentColor" stroke-width="1.2"/><path d="M7 4.5v5M4.5 7h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Добавить профиль
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Mode switcher -->
+  <div class="mode-bar">
+    <span style="font-size:10px;color:var(--txt3);">Режим:</span>
+    <div class="mode-track">
+      <button class="mode-opt" id="opt-user" onclick="setMode('user')">👤 Пользователь</button>
+      <button class="mode-opt on" id="opt-admin" onclick="setMode('admin')">⚙ Администратор</button>
+    </div>
+  </div>
+
+  <!-- Unified banner in sidebar -->
+  <div id="sb-unified" style="display:none;padding:5px 10px;background:rgba(139,92,246,.1);border-bottom:1px solid rgba(139,92,246,.2);font-size:10px;color:#a78bfa;text-align:center;">⚡ Объединённый режим активен</div>
+
+  <!-- USER NAV -->
+  <div id="user-nav" style="display:none;">
+    <div class="nav-sec">
+      <div class="nav-lbl">Главное</div>
+      <button class="ni" id="ni-dashboard" onclick="go('dashboard')">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="2" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="2" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/><rect x="9" y="9" width="5" height="5" rx="1" stroke="currentColor" stroke-width="1.2"/></svg>
+        Дашборд
+      </button>
+    </div>
+    <div class="nav-sec">
+      <div class="nav-lbl">Встречи и вебинары</div>
+      <button class="ni ni-ext" id="ni-meetings" onclick="go('u-meetings')">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="4.5" width="10" height="7" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M11 7l4-2v6l-4-2V7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+        Встречи
+      </button>
+      <button class="ni ni-ext">
+        <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="6" r="3" stroke="currentColor" stroke-width="1.2"/><path d="M2 14c0-3.3 2.7-5 6-5s6 1.7 6 5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Вебинары
+      </button>
+      <button class="ni ni-ext">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M5 4V3a1 1 0 011-1h4a1 1 0 011 1v1" stroke="currentColor" stroke-width="1.2"/></svg>
+        Комнаты
+      </button>
+    </div>
+    <div class="nav-sec">
+      <div class="nav-lbl">Мессенджер</div>
+      <button class="ni ni-ext">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M2 2h12a1 1 0 011 1v7a1 1 0 01-1 1H5l-3 3V3a1 1 0 011-1z" stroke="currentColor" stroke-width="1.2"/></svg>
+        Мессенджер
+      </button>
+    </div>
+    <div class="nav-sec">
+      <div class="nav-lbl">Диск и документы</div>
+      <button class="ni" id="ni-u-disk" onclick="go('u-disk')">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M3 3h10a1 1 0 011 1v9a1 1 0 01-1 1H3a1 1 0 01-1-1V4a1 1 0 011-1z" stroke="currentColor" stroke-width="1.2"/><path d="M3 9h10" stroke="currentColor" stroke-width="1.2"/></svg>
+        Мои файлы
+      </button>
+      <button class="ni">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M8 2L2 5v7l6 3 6-3V5L8 2z" stroke="currentColor" stroke-width="1.2"/></svg>
+        Есть доступ
+      </button>
+      <button class="ni">
+        <svg viewBox="0 0 16 16" fill="none"><polyline points="4,6 8,2 12,6" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/><path d="M8 2v10M3 14h10" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Корзина
+      </button>
+    </div>
+    <div class="nav-sec">
+      <div class="nav-lbl">Почта и календарь</div>
+      <button class="ni" id="ni-u-mail" onclick="go('u-mail')">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3.5" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M2 6l6 4 6-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Почтовые ящики
+      </button>
+      <button class="ni">
+        <svg viewBox="0 0 16 16" fill="none"><circle cx="8" cy="8" r="5.5" stroke="currentColor" stroke-width="1.2"/><path d="M8 5v3l2 2" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Почтовые домены
+      </button>
+    </div>
+    <div class="nav-sec">
+      <div class="nav-lbl">Прочее</div>
+      <button class="ni ni-ext">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M5.5 8l2 2 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Интерактивная доска<span class="sl sl3">3/</span>
+      </button>
+      <button class="ni" id="ni-u-tariffs" onclick="go('u-tariffs')">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3.5" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M2 7h12" stroke="currentColor" stroke-width="1.2"/></svg>
+        Тарифы и оплата
+      </button>
+    </div>
+
+    <!-- Role hint + admin blocks below user nav (role-based, no separate switcher) -->
+    <div class="rh-hint" id="rh-hint-box">
+      <span style="font-size:13px;">⚙</span>
+      <div>
+        <div style="font-size:11px;font-weight:600;">Административные разделы</div>
+        <div style="font-size:10px;opacity:.8;margin-top:1px;">Доступны по вашей роли</div>
+      </div>
+    </div>
+    <div id="role-admin-blocks">
+      <div style="padding:6px 8px 2px;">
+        <div class="rab-lbl">Компания</div>
+        <button class="ni" id="ni-ug" onclick="go('general')">
+          <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="3" stroke="currentColor" stroke-width="1.2"/><path d="M5 7.5h6M5 5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Профиль компании
+        </button>
+        <button class="ni" id="ni-uord" onclick="go('orders')">
+          <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="1.5" width="12" height="13" rx="2" stroke="currentColor" stroke-width="1.2"/></svg>
+          Заказы и счета
+        </button>
+        <div class="rab-lbl" style="margin-top:6px;">Управление</div>
+        <button class="ni" id="ni-uusers" onclick="go('users')">
+          <svg viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M2 14c0-2.8 1.8-4.5 4-4.5s4 1.7 4 4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+          Пользователи
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ADMIN NAV (role-based visibility) -->
+  <div id="admin-nav" style="display:flex;flex-direction:column;">
+    <div class="nav-sec">
+      <div class="nav-lbl"><span class="stage s1">1</span> Компания</div>
+      <button class="ni" id="ni-general" onclick="go('general')">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="3" stroke="currentColor" stroke-width="1.2"/><path d="M5 7.5h6M5 5h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Профиль компании
+      </button>
+      <button class="ni" id="ni-orders" onclick="go('orders')">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="1.5" width="12" height="13" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M5 5h6M5 7.5h6M5 10h4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Заказы и счета
+        <span class="nb nb-w">1</span>
+      </button>
+      <button class="ni" id="ni-docs" onclick="go('docs')">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M10 1.5H4a2 2 0 00-2 2v9a2 2 0 002 2h8a2 2 0 002-2v-7L10 1.5z" stroke="currentColor" stroke-width="1.2"/><path d="M10 1.5V5.5H14" stroke="currentColor" stroke-width="1.2"/></svg>
+        Документы
+      </button>
+    </div>
+
+    <div class="nav-sec" id="sec-admin-users">
+      <div class="nav-lbl"><span class="stage s1">1</span> Пользователи</div>
+      <button class="ni on" id="ni-users" onclick="go('users')">
+        <svg viewBox="0 0 16 16" fill="none"><circle cx="6" cy="5.5" r="2.5" stroke="currentColor" stroke-width="1.2"/><path d="M2 14c0-2.8 1.8-4.5 4-4.5s4 1.7 4 4.5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M12 7.5c1 0 1.8.8 1.8 1.8" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/><path d="M14.5 14c0-1.5-1.1-2.8-2.5-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Пользователи
+        <span class="nb nb-b">247</span>
+      </button>
+    </div>
+
+    <div class="nav-sec" id="sec-admin-roles">
+      <div class="nav-lbl"><span class="stage s2">2</span> Доступы</div>
+      <button class="ni" id="ni-roles" onclick="go('roles')">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4.5" width="12" height="8" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M5.5 4.5V4a2.5 2.5 0 015 0v.5" stroke="currentColor" stroke-width="1.2"/></svg>
+        Роли и доступы
+      </button>
+    </div>
+
+    <div class="nav-sec" id="sec-admin-security">
+      <div class="nav-lbl"><span class="stage s4">4</span> Безопасность</div>
+      <button class="ni" id="ni-security" onclick="go('security')">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M8 1.5L2.5 4.5v4.2C2.5 12 4.8 14.3 8 15c3.2-.7 5.5-3 5.5-6.3V4.5L8 1.5z" stroke="currentColor" stroke-width="1.2"/></svg>
+        Безопасность
+        <span class="nb nb-w">2</span>
+      </button>
+      <button class="ni" id="ni-ldap" onclick="go('ldap')">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="1.5" y="3" width="13" height="4" rx="1.5" stroke="currentColor" stroke-width="1.2"/><rect x="1.5" y="9" width="13" height="4" rx="1.5" stroke="currentColor" stroke-width="1.2"/><circle cx="4" cy="5" r=".7" fill="currentColor"/><circle cx="4" cy="11" r=".7" fill="currentColor"/></svg>
+        LDAP / SSO
+        <span class="nb nb-r">!</span>
+      </button>
+      <button class="ni" id="ni-notifications" onclick="go('notifications')">
+        <svg viewBox="0 0 16 16" fill="none"><path d="M8 1C5.8 1 4 2.8 4 5c0 2.2-.5 3.5-1.8 4h11.6C12.5 8.5 12 7.2 12 5c0-2.2-1.8-4-4-4z" stroke="currentColor" stroke-width="1.2"/><path d="M6.5 13a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Уведомления
+      </button>
+    </div>
+
+    <div class="nav-sec" id="sec-admin-products">
+      <div class="nav-lbl">Продукты</div>
+      <button class="ni" id="ni-mail" onclick="go('mail')">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3.5" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M2 6l6 4 6-4" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Почта <span class="nb nb-b" style="margin-left:auto;"><span class="stage s1" style="font-size:8px;">1</span></span>
+      </button>
+      <button class="ni" id="ni-mcu" onclick="go('mcu')">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="4.5" width="10" height="7" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M11 7l4-2v6l-4-2V7z" stroke="currentColor" stroke-width="1.2" stroke-linejoin="round"/></svg>
+        Встречи <span class="nb nb-g" style="margin-left:auto;"><span class="stage s2" style="font-size:8px;">2</span></span>
+      </button>
+      <button class="ni" id="ni-disk" onclick="go('disk')">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="4.5" width="12" height="7" rx="2" stroke="currentColor" stroke-width="1.2"/><circle cx="12" cy="8" r=".8" fill="currentColor"/><path d="M4 8h5" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Диск <span class="nb nb-b" style="margin-left:auto;"><span class="stage s1" style="font-size:8px;">1</span></span>
+      </button>
+      <button class="ni" id="ni-boards" onclick="go('boards')">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="2" width="12" height="12" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M5.5 8l2 2 3-3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round" stroke-linejoin="round"/></svg>
+        Доска <span class="nb nb-g" style="margin-left:auto;"><span class="stage s3" style="font-size:8px;">3</span></span>
+      </button>
+      <button class="ni" id="ni-collab" onclick="go('collab')">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="3" y="1.5" width="10" height="13" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M5.5 5.5h5M5.5 8h5M5.5 10.5h3" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        Документы <span class="nb nb-g" style="margin-left:auto;"><span class="stage s4" style="font-size:8px;">4</span></span>
+      </button>
+    </div>
+
+    <div class="nav-sec">
+      <div class="nav-lbl">Биллинг</div>
+      <button class="ni" id="ni-subs" onclick="go('subs')">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="2" y="3.5" width="12" height="9" rx="2" stroke="currentColor" stroke-width="1.2"/><path d="M2 7h12" stroke="currentColor" stroke-width="1.2"/></svg>
+        Подписки
+      </button>
+    </div>
+
+    <div class="nav-sec">
+      <div class="nav-lbl"><span class="stage s2">2</span> Профили</div>
+      <button class="ni" id="ni-profiles" onclick="go('profiles')">
+        <svg viewBox="0 0 16 16" fill="none"><rect x="1" y="1.5" width="14" height="5" rx="2" stroke="currentColor" stroke-width="1.2"/><rect x="1" y="9.5" width="14" height="5" rx="2" stroke="currentColor" stroke-width="1.2"/></svg>
+        Мои профили
+      </button>
+    </div>
+  </div>
+</aside>
+
+<!-- ════════ MAIN ════════ -->
+<div class="main">
+
+  <!-- Unified banner -->
+  <div class="unified-bar" id="unified-bar" style="display:none;">
+    <div style="display:flex;gap:3px;" class="ub-dots">
+      <div class="ub-dot" style="background:rgba(77,127,255,.2);color:#7da3ff;">EC</div>
+      <div class="ub-dot" style="background:rgba(20,201,168,.2);color:#2dd4c0;">TS</div>
+      <div class="ub-dot" style="background:rgba(245,158,11,.2);color:#fbbf24;">FC</div>
+    </div>
+    <span>Объединённый режим — все 3 профиля активны</span>
+    <button class="btn btn-g" style="margin-left:auto;font-size:11px;padding:3px 8px;" onclick="toggleUnified()">Выключить</button>
+  </div>
+
+  <header class="hdr">
+    <div>
+      <div class="hdr-title" id="ht">Пользователи</div>
+      <div class="hdr-bread"><span id="hb">Администрирование</span><span style="color:var(--txt3)">›</span><span id="hs">Пользователи</span></div>
+    </div>
+    <div class="hdr-right">
+      <!-- Mode badge in header too -->
+      <div id="hdr-mode-badge" style="display:flex;align-items:center;gap:5px;padding:4px 10px;border-radius:20px;background:rgba(77,127,255,.12);border:1px solid rgba(77,127,255,.2);font-size:10px;font-weight:600;color:var(--blue);cursor:pointer;" onclick="setMode('user')">
+        ⚙ Режим: Администратор
+      </div>
+      <button class="hbtn" style="position:relative;">
+        <svg width="14" height="14" viewBox="0 0 14 14" fill="none"><path d="M7 1C4.8 1 3 2.8 3 5c0 2.2-.5 3.5-1.8 4h11.6C11.5 8.5 11 7.2 11 5c0-2.2-1.8-4-4-4z" stroke="currentColor" stroke-width="1.2"/><path d="M5.5 13a1.5 1.5 0 003 0" stroke="currentColor" stroke-width="1.2" stroke-linecap="round"/></svg>
+        <span class="av-dot"></span>
+      </button>
+      <div class="av">АС</div>
+    </div>
+  </header>
+
+  <div class="body">
+
+<!-- ══ USER: DASHBOARD ══ -->
+<div class="page" id="pg-dashboard">
+  <div class="welcome-hero">
+    <h2>Добрый день, Александр 👋</h2>
+    <p>Example Corp — 247 пользователей · Тариф Бизнес · Осталось 50 лицензий</p>
+  </div>
+  <div class="g4" style="margin-bottom:20px;">
+    <div class="quick-action" onclick=""><div class="quick-action-icon" style="background:rgba(0,176,139,.15);">📹</div><div class="quick-action-label">Начать встречу</div><div class="quick-action-sub">Встречи и вебинары</div></div>
+    <div class="quick-action" onclick=""><div class="quick-action-icon" style="background:rgba(59,130,246,.15);">✉️</div><div class="quick-action-label">Открыть почту</div><div class="quick-action-sub">a.smirnov@example-corp.ru</div></div>
+    <div class="quick-action" onclick=""><div class="quick-action-icon" style="background:rgba(124,58,237,.15);">📁</div><div class="quick-action-label">Мои файлы</div><div class="quick-action-sub">4.2 ГБ из 10 ГБ</div></div>
+    <div class="quick-action" onclick=""><div class="quick-action-icon" style="background:rgba(245,158,11,.15);">📋</div><div class="quick-action-label">Доска</div><div class="quick-action-sub">Последняя: Ретроспектива</div></div>
+  </div>
+  <div class="g2">
+    <div class="card"><div class="ch"><div class="ct">Ближайшие встречи</div></div>
+      <div style="font-size:12.5px;color:var(--txt2);padding:20px 0;text-align:center;">Нет запланированных встреч</div>
+    </div>
+    <div class="card"><div class="ch"><div class="ct">Активность</div></div>
+      <div class="mm"><span class="mm-l">Встреч за неделю</span><span class="mm-v">12</span></div>
+      <div class="mm"><span class="mm-l">Писем получено</span><span class="mm-v">84</span></div>
+      <div class="mm"><span class="mm-l">Файлов загружено</span><span class="mm-v">7</span></div>
+      <div class="mm" style="border-bottom:none;"><span class="mm-l">Коллег онлайн</span><span class="mm-v" style="color:var(--green);">34</span></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ USER: MY MAIL ══ -->
+<div class="page" id="pg-u-mail">
+  <div class="ph"><div><h1>Почта и календарь</h1><p>Ваши почтовые ящики и настройки</p></div></div>
+  <div class="tabs"><button class="tab on" onclick="stab('umail-t','um-boxes',this)">Мои ящики</button><button class="tab" onclick="stab('umail-t','um-apppass',this)">Пароли приложений</button><button class="tab" onclick="stab('umail-t','um-settings',this)">Настройки</button></div>
+  <div id="umail-t">
+    <div class="tc on" id="um-boxes">
+      <div class="notice ni-inf">Ваши почтовые ящики. Нажмите «Открыть» чтобы перейти в веб-почту.</div>
+      <div class="card"><div class="ch"><div class="ct">Почтовые ящики</div></div>
+        <table><thead><tr><th>Адрес</th><th>Квота</th><th>Использовано</th><th>Тип</th><th></th></tr></thead><tbody>
+          <tr><td><div style="font-weight:500;">a.smirnov@example-corp.ru</div><div style="font-size:10.5px;color:var(--txt3);">Основной</div></td><td>25 ГБ</td><td><div style="display:flex;align-items:center;gap:8px;"><div class="pr" style="width:90px;"><div class="pf" style="width:17%"></div></div><span style="font-size:11px;color:var(--txt3);">4.2 ГБ</span></div></td><td><span class="tag tb">Корпоративный</span></td><td><button class="btn btn-p" style="font-size:11px;">Открыть ↗</button></td></tr>
+        </tbody></table>
+      </div>
+    </div>
+    <div class="tc" id="um-apppass">
+      <div class="notice ni-inf"><strong>Пароль приложения</strong> — отдельный пароль для подключения почтовых клиентов по IMAP/SMTP (Thunderbird, Outlook, мобильные приложения). Не раскрывает основной пароль.</div>
+      <div class="card"><div class="ch"><div class="ct">Пароли приложений (IMAP/SMTP)</div><button class="btn btn-p" onclick="showModal('mod-create-apppass')">+ Создать пароль</button></div>
+        <div id="apppass-list">
+          <div class="app-pass-row"><div><div class="app-pass-name">Thunderbird (рабочий)</div><div class="app-pass-meta">Создан 15.01.2025 · Последнее использование: вчера · imap.example-corp.ru</div></div><button class="btn btn-d" style="font-size:11px;">Отозвать</button></div>
+          <div class="app-pass-row"><div><div class="app-pass-name">iPhone Mail</div><div class="app-pass-meta">Создан 03.03.2025 · Последнее использование: сегодня</div></div><button class="btn btn-d" style="font-size:11px;">Отозвать</button></div>
+        </div>
+        <div style="background:var(--bg3);border-radius:var(--rs);padding:14px;margin-top:14px;">
+          <div style="font-size:12px;font-weight:600;margin-bottom:8px;">Настройки IMAP</div>
+          <div class="attr-row" style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--line);"><span style="font-size:11.5px;color:var(--txt2);min-width:80px;">Сервер</span><span style="font-family:var(--mono);font-size:12px;color:var(--teal);">imap.example-corp.ru</span></div>
+          <div class="attr-row" style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--line);"><span style="font-size:11.5px;color:var(--txt2);min-width:80px;">Порт IMAP</span><span style="font-family:var(--mono);font-size:12px;color:var(--teal);">993 (SSL)</span></div>
+          <div class="attr-row" style="display:flex;align-items:center;gap:8px;padding:4px 0;border-bottom:1px solid var(--line);"><span style="font-size:11.5px;color:var(--txt2);min-width:80px;">Порт SMTP</span><span style="font-family:var(--mono);font-size:12px;color:var(--teal);">587 (TLS)</span></div>
+          <div class="attr-row" style="display:flex;align-items:center;gap:8px;padding:4px 0;"><span style="font-size:11.5px;color:var(--txt2);min-width:80px;">Логин</span><span style="font-family:var(--mono);font-size:12px;color:var(--teal);">a.smirnov@example-corp.ru</span></div>
+        </div>
+      </div>
+    </div>
+    <div class="tc" id="um-settings">
+      <div class="card"><div class="ch"><div class="ct">Настройки ящика</div></div>
+        <div class="sr" style="padding-top:0;"><div class="sr-info"><h4>Автоответ (отпуск)</h4></div><div class="sr-ctrl"><label class="tog"><input type="checkbox"/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div>
+        <div class="sr"><div class="sr-info"><h4>Перенаправление писем</h4></div><div class="sr-ctrl"><label class="tog"><input type="checkbox"/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div>
+        <div class="sr"><div class="sr-info"><h4>Уведомления на рабочий стол</h4></div><div class="sr-ctrl"><label class="tog"><input type="checkbox" checked/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div>
+        <div class="sr"><div class="sr-info"><h4>Подпись в письмах</h4></div><div class="sr-ctrl"><button class="btn btn-s" style="font-size:11px;">Редактировать</button></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ USER: DISK ══ -->
+<div class="page" id="pg-u-disk">
+  <div class="ph"><div><h1>Мои файлы</h1></div></div>
+  <div class="g4" style="margin-bottom:20px;">
+    <div class="sc"><div class="sv">4.2 ГБ</div><div class="sl">Занято</div><div class="sbar"><div class="sfill" style="width:42%"></div></div></div>
+    <div class="sc"><div class="sv">10 ГБ</div><div class="sl">Квота</div></div>
+    <div class="sc"><div class="sv">234</div><div class="sl">Файлов</div></div>
+    <div class="sc"><div class="sv">3</div><div class="sl">Общих папок</div></div>
+  </div>
+  <div class="card"><div class="ch"><div class="ct">Файлы</div><div style="display:flex;gap:6px;"><button class="btn btn-s">⬆ Загрузить</button><button class="btn btn-p">+ Папка</button></div></div>
+    <div style="text-align:center;padding:40px;color:var(--txt3);">Файловый менеджер · Откроется во внешнем приложении ↗</div>
+  </div>
+</div>
+
+<!-- ══ USER: TARIFFS ══ -->
+<div class="page" id="pg-u-tariffs">
+  <div class="ph"><div><h1>Тарифы и подписка</h1><p>Текущий план и доступные обновления</p></div></div>
+  <div id="tariffs-grid"></div>
+</div>
+
+<!-- ══ ADMIN: USERS ══ -->
+<div class="page on" id="pg-users">
+  <div class="ph"><div><h1>Пользователи</h1><p>Управление учётными записями и лицензиями</p></div><div class="ph-act"><button class="btn btn-s">Импорт CSV</button><button class="btn btn-p" onclick="showModal('mod-invite')">+ Пригласить</button></div></div>
+  <div class="g4" style="margin-bottom:20px;">
+    <div class="sc"><div class="sv">247</div><div class="sl">Всего</div><div class="sd">↑ 12 за 30 дн.</div></div>
+    <div class="sc"><div class="sv" style="color:var(--green);">192</div><div class="sl">Активных</div></div>
+    <div class="sc"><div class="sv" style="color:var(--amber);">8</div><div class="sl">Заблок.</div><div class="sd dn">↑ 2</div></div>
+    <div class="sc"><div class="sv" style="color:var(--txt2);">50</div><div class="sl">Своб. лицензий</div><div class="sbar"><div class="sfill" style="width:83%"></div></div></div>
+  </div>
+  <div class="card">
+    <div class="ch"><div class="ct">Список пользователей</div><div style="display:flex;gap:8px;flex-wrap:wrap;"><input class="fi" placeholder="Поиск..." style="width:180px"/><select class="fs" style="width:130px;"><option>Все роли</option><option>Суперадмин</option><option>Администратор</option><option>Пользователь</option></select><select class="fs" style="width:130px;"><option>Все статусы</option><option>Активный</option><option>Заблокирован</option></select></div></div>
+    <div class="twrap"><table><thead><tr><th><input type="checkbox"/></th><th>Пользователь</th><th>Роль</th><th>Отдел</th><th>Продукты</th><th>2FA</th><th>Вход</th><th>Источник</th><th>Статус</th><th></th></tr></thead><tbody id="ut"></tbody></table></div>
+    <div style="display:flex;align-items:center;justify-content:space-between;padding-top:12px;border-top:1px solid var(--line);">
+      <span style="font-size:11px;color:var(--txt3);">1–10 из 247</span>
+      <div style="display:flex;gap:3px;"><button class="btn btn-s" style="font-size:11px;padding:4px 9px;">←</button><button class="btn btn-p" style="font-size:11px;padding:4px 9px;">1</button><button class="btn btn-s" style="font-size:11px;padding:4px 9px;">2</button><button class="btn btn-s" style="font-size:11px;padding:4px 9px;">→</button></div>
+    </div>
+  </div>
+  <div class="card" style="margin-top:14px;">
+    <div class="ch"><div><div class="ct">Offboarding</div><div class="csub">Что происходит с данными при увольнении</div></div></div>
+    <div class="ob-step"><div class="ob-icon" style="background:rgba(239,68,68,.15);">🚫</div><div class="ob-content"><h4>Немедленное завершение всех сессий</h4><p>Отзыв токенов, SSO-сессий, активных соединений</p></div></div>
+    <div class="ob-step"><div class="ob-icon" style="background:rgba(245,158,11,.15);">📦</div><div class="ob-content"><h4>Передача данных</h4>
+      <div style="display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-top:6px;"><select class="fs" style="width:200px;"><option>Передать руководителю</option><option>Выбрать получателя</option><option>Архивировать</option></select><span style="font-size:11.5px;color:var(--txt3);">Grace period:</span><select class="fs" style="width:100px;"><option>30 дней</option><option>60 дней</option><option>90 дней</option></select></div>
+    </div></div>
+    <div class="ob-step"><div class="ob-icon" style="background:rgba(16,185,129,.15);">⏰</div><div class="ob-content"><h4>Автоматический offboarding по дате</h4><div class="sr" style="padding-top:4px;"><div class="sr-info"><p>Для срочных контрактов</p></div><div class="sr-ctrl"><label class="tog"><input type="checkbox"/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div></div></div>
+  </div>
+  <div class="card" style="margin-top:14px;"><div class="ct" style="margin-bottom:10px;">Массовые операции</div><div style="display:flex;gap:8px;flex-wrap:wrap;"><button class="btn btn-s">Назначить роль</button><button class="btn btn-s">Назначить продукты</button><button class="btn btn-s">Сбросить пароли</button><button class="btn btn-s">Экспорт</button><button class="btn btn-d">Заблокировать</button></div></div>
+</div>
+
+<!-- ══ ADMIN: ROLES ══ -->
+<div class="page" id="pg-roles">
+  <div class="ph"><div><h1>Роли и доступы</h1><p>Роли управляют <strong>видимостью разделов</strong> в меню администратора. Выберите роли для сравнения (макс. 3).</p></div><div class="ph-act"><button class="btn btn-p" onclick="openDrawer(null)">+ Создать роль</button></div></div>
+
+  <div class="notice ni-inf"><strong>Как работают роли в меню:</strong> Если у роли нет доступа к разделу «LDAP/SSO» — этот пункт просто не отображается в меню. Финансовая роль видит только Заказы, Счета, Документы.</div>
+
+  <!-- Role picker -->
+  <div class="card" style="margin-bottom:16px;padding:16px 20px;">
+    <div style="font-size:10px;font-weight:600;color:var(--txt3);text-transform:uppercase;letter-spacing:.8px;margin-bottom:10px;">Выберите роли для просмотра (макс. 3 — данные грузятся только для выбранных)</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px;" id="role-picker"></div>
+    <div style="font-size:11.5px;color:var(--txt3);display:flex;align-items:center;gap:12px;">
+      <span>💡 Выберите 2 роли чтобы увидеть различия</span>
+      <label class="tog" style="gap:6px;"><input type="checkbox" onchange="toggleCompare(this.checked)"/><div class="tog-track"><div class="tog-thumb"></div></div><span style="font-size:11.5px;color:var(--txt2);">Подсветить различия</span></label>
+    </div>
+  </div>
+
+  <!-- Example: Custom "Finance" role -->
+  <div class="card" style="margin-bottom:16px;background:rgba(217,119,6,.04);border-color:rgba(217,119,6,.2);">
+    <div class="ch"><div><div class="ct">💡 Пример: Роль «Финансы»</div><div class="csub">Видит только финансовые разделы — никаких LDAP, пользователей, продуктов</div></div></div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;">
+      <span class="tag tg" style="padding:3px 9px;">✓ Профиль компании</span>
+      <span class="tag tg" style="padding:3px 9px;">✓ Заказы и счета</span>
+      <span class="tag tg" style="padding:3px 9px;">✓ Документы</span>
+      <span class="tag tg" style="padding:3px 9px;">✓ Подписки</span>
+      <span class="tag tr" style="padding:3px 9px;">✗ Пользователи</span>
+      <span class="tag tr" style="padding:3px 9px;">✗ LDAP/SSO</span>
+      <span class="tag tr" style="padding:3px 9px;">✗ Безопасность</span>
+      <span class="tag tr" style="padding:3px 9px;">✗ Продукты</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <div class="ch"><div><div class="ct">Матрица прав и видимости</div><div class="csub">Выбрано: <span id="matrix-count">2</span> из 8 ролей</div></div><button class="btn btn-s" style="font-size:11px;">Экспорт</button></div>
+    <div style="overflow-x:auto;"><table class="role-matrix" id="role-matrix"><thead id="matrix-thead"></thead><tbody id="matrix-tbody"></tbody></table></div>
+  </div>
+</div>
+
+<!-- ══ ADMIN: GENERAL (Company Profile) ══ -->
+<div class="page" id="pg-general">
+  <div class="ph"><div><h1>Профиль компании</h1></div><div class="ph-act"><button class="btn btn-p">Сохранить</button></div></div>
+  <div class="tabs"><button class="tab on" onclick="stab('gen-t','g-profile',this)">Профиль</button><button class="tab" onclick="stab('gen-t','g-brand',this)">Логотип и бренд</button><button class="tab" onclick="stab('gen-t','g-req',this)">Реквизиты</button><button class="tab" onclick="stab('gen-t','g-payers',this)">Плательщики</button><button class="tab" onclick="stab('gen-t','g-contacts',this)">Контакты</button><button class="tab" onclick="stab('gen-t','g-compliance',this)">Compliance / ПД</button></div>
+  <div id="gen-t">
+    <div class="tc on" id="g-profile">
+      <div class="g2">
+        <div class="card">
+          <div class="ch"><div class="ct">Карточка организации</div><button class="btn btn-s" onclick="showModal('mod-owner')">Сменить владельца</button></div>
+          <div style="display:flex;align-items:center;gap:12px;padding:12px;background:var(--bg3);border-radius:var(--rs);margin-bottom:16px;">
+            <div style="width:48px;height:48px;border-radius:10px;background:linear-gradient(135deg,var(--blue),var(--purple));display:flex;align-items:center;justify-content:center;font-size:16px;font-weight:700;color:#fff;flex-shrink:0;">EC</div>
+            <div><div style="font-size:14px;font-weight:600;">Example Corp ООО</div><div style="font-family:var(--mono);font-size:10.5px;color:var(--txt3);margin-top:2px;">t_a8f2c1d4e9b3</div><div style="display:flex;gap:5px;margin-top:5px;"><span class="tag tg">Верифицировано</span><span class="tag tb">Бизнес</span></div></div>
+          </div>
+          <div class="fg"><label class="fl">Название компании</label><input class="fi" value="Example Corp ООО"/></div>
+          <div class="fg"><label class="fl">Slug</label><input class="fi" value="example-corp" style="font-family:var(--mono)"/><div class="fh">iva360.ru/org/example-corp</div></div>
+          <div class="g2"><div class="fg"><label class="fl">Отрасль</label><select class="fs"><option>Информационные технологии</option></select></div><div class="fg"><label class="fl">Часовой пояс</label><select class="fs"><option selected>Moscow (UTC+3)</option></select></div></div>
+        </div>
+        <div class="card">
+          <div class="ch"><div class="ct">Техническая информация</div></div>
+          <div class="mm"><span class="mm-l">Tenant ID</span><span style="font-family:var(--mono);font-size:11.5px;color:var(--teal);">t_a8f2c1d4e9b3</span></div>
+          <div class="mm"><span class="mm-l">Дата регистрации</span><span class="mm-v">12.01.2024</span></div>
+          <div class="mm"><span class="mm-l">Тарифный план</span><span class="tag tb">Бизнес</span></div>
+          <div class="mm"><span class="mm-l">Менеджер IVA 360</span><span class="mm-v">Иван Петров</span></div>
+          <div class="mm"><span class="mm-l">Статус</span><span class="tag tg">Верифицировано</span></div>
+          <div class="mm" style="border-bottom:none;"><span class="mm-l">Плательщиков</span><div style="display:flex;gap:6px;align-items:center;"><span class="mm-v">2</span><button class="btn btn-g" style="font-size:10px;padding:2px 6px;" onclick="stab('gen-t','g-payers',document.querySelectorAll('#gen-t+.tabs .tab, .tabs .tab')[3])">→</button></div></div>
+        </div>
+      </div>
+    </div>
+    <div class="tc" id="g-brand">
+      <div class="g2">
+        <div class="card"><div class="ch"><div class="ct">Логотип компании</div></div>
+          <div style="border:2px dashed var(--line3);border-radius:var(--rs);padding:28px;text-align:center;cursor:pointer;transition:border-color .15s;" onmouseover="this.style.borderColor='var(--teal)'" onmouseout="this.style.borderColor='var(--line3)'">
+            <div style="width:56px;height:56px;background:linear-gradient(135deg,var(--blue),var(--purple));border-radius:10px;margin:0 auto 10px;display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:600;color:#fff;">EC</div>
+            <div style="font-size:12px;color:var(--txt2);">Перетащите или нажмите</div>
+            <div style="font-size:11px;color:var(--txt3);margin-top:3px;">PNG, SVG · 2 МБ · 256×256 px</div>
+          </div>
+          <div style="margin-top:12px;font-size:11.5px;color:var(--txt2);">Логотип отображается в:</div>
+          <div style="display:flex;flex-wrap:wrap;gap:5px;margin-top:6px;"><span class="tag tb">Личный кабинет</span><span class="tag tb">Встречи</span><span class="tag tb">Почта</span><span class="tag tb">Диск</span><span class="tag tb">Доска</span></div>
+        </div>
+        <div class="card"><div class="ch"><div class="ct">Брендинг</div><span class="tag ta">Следующая версия</span></div>
+          <div style="text-align:center;padding:28px 0;"><div style="font-size:32px;margin-bottom:8px;">🎨</div><div style="font-size:13px;color:var(--txt2);">White-label — кастомные цвета</div><div style="font-size:11.5px;color:var(--txt3);margin-top:4px;">Во всех продуктах</div></div>
+        </div>
+      </div>
+    </div>
+    <div class="tc" id="g-req">
+      <div class="notice ni-inf"><strong>Реквизиты организации ≠ реквизиты плательщика.</strong> Здесь — юридические данные вашей компании. Реквизиты для счетов и актов — на вкладке «Плательщики».</div>
+      <div class="card"><div class="ch"><div class="ct">Юридические реквизиты</div><button class="btn btn-p">Сохранить</button></div>
+        <div class="g2"><div><div class="fg"><label class="fl">ИНН</label><input class="fi" value="7712345678" style="font-family:var(--mono)"/></div><div class="fg"><label class="fl">КПП</label><input class="fi" value="771201001" style="font-family:var(--mono)"/></div><div class="fg"><label class="fl">ОГРН</label><input class="fi" value="1027700000001" style="font-family:var(--mono)"/></div><div class="fg"><label class="fl">Тип юрлица</label><select class="fs"><option>ООО</option><option>АО</option><option>ИП</option></select></div></div><div><div class="fg"><label class="fl">Юридический адрес</label><input class="fi" value="125009, Москва, ул. Примерная, д. 1"/></div><div class="fg"><label class="fl">Фактический адрес</label><input class="fi" placeholder="Если отличается"/></div><div class="fg"><label class="fl">Веб-сайт</label><input class="fi" value="https://example-corp.ru"/></div><div class="fg"><label class="fl">Телефон</label><input class="fi" value="+7 (495) 123-45-67"/></div></div></div>
+      </div>
+    </div>
+    <div class="tc" id="g-payers">
+      <div class="notice ni-inf"><strong>Плательщик</strong> — юрлицо, от имени которого выставляются счета. Схема: Плательщик → Заказ → Счёт → Документы.</div>
+      <div style="display:flex;justify-content:flex-end;margin-bottom:12px;"><button class="btn btn-p" onclick="showModal('mod-add-payer')">+ Добавить плательщика</button></div>
+      <div class="g2" id="payers-grid"></div>
+      <div id="payers-empty" style="display:none;"><div class="empty-box"><div class="ei">🏦</div><h3>Нет плательщиков</h3><p>Добавьте плательщика для оформления заказов</p><button class="btn btn-p" onclick="showModal('mod-add-payer')">+ Добавить</button></div></div>
+    </div>
+    <div class="tc" id="g-contacts">
+      <div class="g2"><div class="card"><div class="ch"><div class="ct">Биллинг</div></div><div class="fg"><label class="fl">ФИО ответственного</label><input class="fi" value="Смирнов Александр Иванович"/></div><div class="fg"><label class="fl">Email для счетов</label><input class="fi" value="billing@example-corp.ru"/></div><div class="fg"><label class="fl">Телефон</label><input class="fi" value="+7 (495) 123-45-67"/></div></div><div class="card"><div class="ch"><div class="ct">Технические вопросы</div></div><div class="fg"><label class="fl">ФИО</label><input class="fi" value="Иванова Мария"/></div><div class="fg"><label class="fl">Email уведомлений</label><input class="fi" value="tech@example-corp.ru"/></div><div class="fg"><label class="fl">Email безопасности</label><input class="fi" value="security@example-corp.ru"/></div></div></div>
+    </div>
+    <div class="tc" id="g-compliance">
+      <div class="card"><div class="ch"><div class="ct">Compliance и обработка ПД</div></div>
+        <div class="fg"><label class="fl">URL Политики конфиденциальности</label><input class="fi" value="https://example-corp.ru/privacy"/></div>
+        <div class="fg"><label class="fl">URL Соглашения</label><input class="fi" value="https://example-corp.ru/tos"/></div>
+        <div class="sr"><div class="sr-info"><h4>Требовать принятие при первом входе</h4></div><div class="sr-ctrl"><label class="tog"><input type="checkbox" checked/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div>
+        <div class="sr"><div class="sr-info"><h4>Регион хранения данных</h4></div><div class="sr-ctrl"><select class="fs" style="width:140px;"><option selected>Россия (152-ФЗ)</option><option>ЕС (GDPR)</option></select></div></div>
+        <div class="sr"><div class="sr-info"><h4>DPA (Data Processing Agreement)</h4></div><div class="sr-ctrl"><button class="btn btn-s" style="font-size:11px;">⬆ PDF</button></div></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADMIN: ORDERS ══ -->
+<div class="page" id="pg-orders">
+  <div class="ph"><div><h1>Заказы и счета</h1></div><div class="ph-act"><button class="btn btn-s">Экспорт</button><button class="btn btn-p" onclick="showModal('mod-new-order')">+ Новый заказ</button></div></div>
+  <div class="g4" style="margin-bottom:20px;">
+    <div class="sc"><div class="sv" style="color:var(--green);">₽ 552 000</div><div class="sl">Оплачено в году</div></div>
+    <div class="sc"><div class="sv" style="color:var(--amber);">₽ 184 000</div><div class="sl">Ожидает оплаты</div></div>
+    <div class="sc"><div class="sv">3</div><div class="sl">Активных заказов</div></div>
+    <div class="sc"><div class="sv">2</div><div class="sl">Плательщиков</div></div>
+  </div>
+  <div class="tabs"><button class="tab on" onclick="stab('ord-t','o-orders',this)">Заказы</button><button class="tab" onclick="stab('ord-t','o-invoices',this)">Счета</button></div>
+  <div id="ord-t">
+    <div class="tc on" id="o-orders"><div class="card"><div class="ch"><div class="ct">Список заказов</div></div><div id="orders-list"></div></div></div>
+    <div class="tc" id="o-invoices"><div class="g2" id="invoices-grid"></div></div>
+  </div>
+</div>
+
+<!-- ══ ADMIN: DOCUMENTS ══ -->
+<div class="page" id="pg-docs">
+  <div class="ph"><div><h1>Документы</h1><p>Акты, договоры, УПД, счета</p></div><div class="ph-act"><button class="btn btn-s">⬆ Загрузить</button></div></div>
+  <div class="tabs"><button class="tab on" onclick="stab('doc-t','d-all',this)">Все</button><button class="tab" onclick="stab('doc-t','d-acts',this)">Акты и УПД</button><button class="tab" onclick="stab('doc-t','d-contracts',this)">Договоры</button><button class="tab" onclick="stab('doc-t','d-inv',this)">Счета PDF</button></div>
+  <div id="doc-t">
+    <div class="tc on" id="d-all"><div class="card"><div class="ch"><div class="ct">Документы</div><input class="fi" placeholder="Поиск..." style="width:180px;"/></div><div id="docs-list"></div></div></div>
+    <div class="tc" id="d-acts"><div class="card"><div class="ch"><div class="ct">Акты и УПД</div></div><div id="acts-list"></div></div></div>
+    <div class="tc" id="d-contracts"><div class="card"><div class="ch"><div class="ct">Договоры</div></div><div id="contr-list"></div></div></div>
+    <div class="tc" id="d-inv"><div class="card"><div class="ch"><div class="ct">Счета</div></div><div id="inv-pdf-list"></div></div></div>
+  </div>
+</div>
+
+<!-- ══ ADMIN: SECURITY ══ -->
+<div class="page" id="pg-security">
+  <div class="ph"><div><h1>Безопасность</h1></div></div>
+  <div class="notice ni-wrn">58 пользователей без 2FA · 12 не меняли пароль более 180 дней</div>
+  <div class="g2">
+    <div class="card"><div class="ch"><div class="ct">Многофакторная аутентификация</div></div>
+      <div class="sr" style="padding-top:0;"><div class="sr-info"><h4>Требовать 2FA для всех</h4></div><div class="sr-ctrl"><label class="tog"><input type="checkbox" checked/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div>
+      <div class="sr"><div class="sr-info"><h4>Методы</h4></div><div class="sr-ctrl" style="flex-direction:column;align-items:flex-end;gap:4px;"><label style="display:flex;gap:5px;font-size:12px;cursor:pointer;"><input type="checkbox" checked/> TOTP</label><label style="display:flex;gap:5px;font-size:12px;cursor:pointer;"><input type="checkbox" checked/> SMS/Email OTP</label><label style="display:flex;gap:5px;font-size:12px;cursor:pointer;"><input type="checkbox"/> FIDO2</label></div></div>
+      <div class="sr"><div class="sr-info"><h4>Принудительная 2FA для администраторов</h4></div><div class="sr-ctrl"><label class="tog"><input type="checkbox" checked/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div>
+    </div>
+    <div class="card"><div class="ch"><div class="ct">Политика паролей</div></div>
+      <div class="fg"><label class="fl">Минимальная длина</label><input class="fi" type="number" value="12" style="width:80px;"/></div>
+      <div class="fg"><label class="fl">Срок действия</label><select class="fs"><option>Не ограничен</option><option selected>90 дней</option><option>180 дней</option></select></div>
+      <div class="sr" style="padding-top:4px;"><div class="sr-info"><h4>Блокировка после N попыток</h4><input class="fi" type="number" value="5" style="width:60px;margin-top:4px;"/></div><div class="sr-ctrl"><label class="tog"><input type="checkbox" checked/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div>
+    </div>
+  </div>
+  <div class="g2" style="margin-top:14px;">
+    <div class="card"><div class="ch"><div class="ct">IP-ограничения</div></div>
+      <div class="sr" style="padding-top:0;"><div class="sr-info"><h4>IP Whitelist</h4></div><div class="sr-ctrl"><label class="tog"><input type="checkbox" id="ipwl" onchange="document.getElementById('ipwl-b').style.display=this.checked?'block':'none'"/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div>
+      <div id="ipwl-b" style="display:none;"><textarea class="fta" rows="2" style="margin-top:8px;font-family:var(--mono);font-size:12px;" placeholder="10.0.0.0/24"></textarea></div>
+      <div class="sr"><div class="sr-info"><h4>Запрет VPN/TOR</h4></div><div class="sr-ctrl"><label class="tog"><input type="checkbox"/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div>
+    </div>
+    <div class="card"><div class="ch"><div class="ct">Аудит-лог <span class="tag ta" style="font-size:9px;">4/ Развитие</span></div><button class="btn btn-s">Экспорт</button></div>
+      <div class="sr" style="padding-top:0;"><div class="sr-info"><h4>Детализация</h4></div><div class="sr-ctrl"><select class="fs" style="width:140px;"><option>Базовый</option><option selected>Расширенный</option></select></div></div>
+      <div class="sr"><div class="sr-info"><h4>SIEM (Syslog) — выгрузка логов продуктов</h4><p>4/ этап — выгрузка логов по всем продуктам (Почта, Встречи, Диск)</p></div><div class="sr-ctrl"><label class="tog"><input type="checkbox"/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div>
+      <div style="margin-top:10px;" id="audit-log"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ══ ADMIN: LDAP/SSO ══ -->
+<div class="page" id="pg-ldap">
+  <div class="ph"><div><h1>LDAP / SSO</h1><p>Единый вход и синхронизация из корпоративного каталога</p></div><div class="ph-act"><button class="btn btn-s">Тест соединения</button></div></div>
+  <div class="tabs"><button class="tab on" onclick="stab('ldap-t','l-ldap',this)">LDAP / AD</button><button class="tab" onclick="stab('ldap-t','l-sso',this)">SSO (SAML / OIDC)</button><button class="tab" onclick="stab('ldap-t','l-attrs',this)">Маппинг атрибутов</button><button class="tab" onclick="stab('ldap-t','l-groups',this)">Автогруппировка</button><button class="tab" onclick="stab('ldap-t','l-sync',this)">Синхронизации</button></div>
+  <div id="ldap-t">
+    <div class="tc on" id="l-ldap">
+      <div style="display:flex;align-items:center;gap:8px;padding:12px 16px;background:var(--bg3);border-radius:var(--rs);border:1px solid var(--line);margin-bottom:16px;"><div class="ldap-pulse err"></div><div style="flex:1;"><div style="font-size:13px;font-weight:500;">LDAP не настроен</div><div style="font-size:11px;color:var(--txt3);">Без LDAP — только вход по паролю IVA 360</div></div><span class="tag tr">Требует настройки</span></div>
+      <div class="g2">
+        <div class="card"><div class="ch"><div class="ct">Подключение к серверу</div></div>
+          <div class="fg"><label class="fl">Тип сервера</label><select class="fs"><option selected>Microsoft Active Directory</option><option>OpenLDAP</option><option>FreeIPA</option><option>Samba AD</option></select></div>
+          <div class="fg"><label class="fl">Хост</label><input class="fi" placeholder="ldap.example-corp.ru" style="font-family:var(--mono)"/></div>
+          <div class="g2"><div class="fg"><label class="fl">Порт</label><input class="fi" value="389" style="font-family:var(--mono)"/></div><div class="fg"><label class="fl">Протокол</label><select class="fs"><option>LDAP (389)</option><option>LDAPS (636)</option><option>STARTTLS</option></select></div></div>
+          <div class="fg"><label class="fl">Bind DN</label><input class="fi" placeholder="cn=ldap-reader,cn=Users,dc=..." style="font-family:var(--mono);font-size:11.5px"/></div>
+          <div class="fg"><label class="fl">Bind Password</label><input class="fi" type="password" placeholder="••••••••"/></div>
+          <button class="btn btn-s" style="width:100%;">🔌 Проверить соединение</button>
+        </div>
+        <div class="card"><div class="ch"><div class="ct">Режим и поиск</div></div>
+          <div class="fg"><label class="fl">Base DN (пользователи)</label><input class="fi" placeholder="cn=Users,dc=example-corp,dc=ru" style="font-family:var(--mono);font-size:11.5px"/></div>
+          <div class="fg"><label class="fl">Фильтр пользователей</label><input class="fi" value="(&(objectClass=user)(!(userAccountControl:...=2)))" style="font-family:var(--mono);font-size:10.5px"/></div>
+          <div style="font-size:12px;font-weight:500;color:var(--txt2);margin-bottom:8px;margin-top:4px;">Режим использования</div>
+          <div style="display:flex;flex-direction:column;gap:5px;">
+            <label style="display:flex;gap:8px;font-size:12.5px;cursor:pointer;"><input type="radio" name="ldap-mode" checked/> Аутентификация + синхронизация</label>
+            <label style="display:flex;gap:8px;font-size:12.5px;cursor:pointer;"><input type="radio" name="ldap-mode"/> Только аутентификация</label>
+            <label style="display:flex;gap:8px;font-size:12.5px;cursor:pointer;"><input type="radio" name="ldap-mode"/> Только адресная книга</label>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tc" id="l-sso">
+      <div class="notice ni-inf">Скачайте SP-метаданные → загрузите в IdP → нажмите «Тест SSO».</div>
+      <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:20px;">
+        <div style="background:var(--bg3);border:1.5px solid var(--line);border-radius:var(--rs);padding:14px;cursor:pointer;text-align:center;border-color:var(--blue);" onclick="this.closest('.page').querySelectorAll('[data-idp]').forEach(c=>{c.style.borderColor='var(--line)'});this.style.borderColor='var(--blue)'"><div style="font-size:22px;margin-bottom:5px;">🔑</div><div style="font-size:11px;font-weight:600;">Keycloak</div><div style="font-size:9.5px;color:var(--txt3);">SAML / OIDC</div></div>
+        <div style="background:var(--bg3);border:1.5px solid var(--line);border-radius:var(--rs);padding:14px;cursor:pointer;text-align:center;" data-idp onclick="this.closest('.page').querySelectorAll('[data-idp]').forEach(c=>{c.style.borderColor='var(--line)'});this.style.borderColor='var(--blue)'"><div style="font-size:22px;margin-bottom:5px;">🌐</div><div style="font-size:11px;font-weight:600;">Azure AD</div><div style="font-size:9.5px;color:var(--txt3);">SAML / OIDC</div></div>
+        <div style="background:var(--bg3);border:1.5px solid var(--line);border-radius:var(--rs);padding:14px;cursor:pointer;text-align:center;" data-idp onclick="this.closest('.page').querySelectorAll('[data-idp]').forEach(c=>{c.style.borderColor='var(--line)'});this.style.borderColor='var(--blue)'"><div style="font-size:22px;margin-bottom:5px;">🏢</div><div style="font-size:11px;font-weight:600;">ADFS</div><div style="font-size:9.5px;color:var(--txt3);">SAML 2.0</div></div>
+        <div style="background:var(--bg3);border:1.5px solid var(--line);border-radius:var(--rs);padding:14px;cursor:pointer;text-align:center;" data-idp onclick="this.closest('.page').querySelectorAll('[data-idp]').forEach(c=>{c.style.borderColor='var(--line)'});this.style.borderColor='var(--blue)'"><div style="font-size:22px;margin-bottom:5px;">Я</div><div style="font-size:11px;font-weight:600;">Яндекс 360</div><div style="font-size:9.5px;color:var(--txt3);">OIDC</div></div>
+        <div style="background:var(--bg3);border:1.5px solid var(--line);border-radius:var(--rs);padding:14px;cursor:pointer;text-align:center;" data-idp onclick="this.closest('.page').querySelectorAll('[data-idp]').forEach(c=>{c.style.borderColor='var(--line)'});this.style.borderColor='var(--blue)'"><div style="font-size:22px;margin-bottom:5px;">⚙️</div><div style="font-size:11px;font-weight:600;">Custom</div><div style="font-size:9.5px;color:var(--txt3);">SAML / OIDC</div></div>
+      </div>
+      <div class="g2">
+        <div class="card"><div class="ch"><div class="ct">Настройки IdP</div></div>
+          <div class="fg"><label class="fl">Протокол</label><select class="fs"><option selected>SAML 2.0</option><option>OIDC / OAuth 2.0</option></select></div>
+          <div class="fg"><label class="fl">URL метаданных IdP</label><input class="fi" placeholder="https://sso.example.com/metadata" style="font-family:var(--mono);font-size:11px"/></div>
+          <div class="fg"><label class="fl">SSO Login URL</label><input class="fi" placeholder="https://sso.example.com/sso" style="font-family:var(--mono);font-size:11px"/></div>
+          <div class="sr" style="padding-top:4px;"><div class="sr-info"><h4>Принудительный SSO</h4><p>Отключить вход по паролю</p></div><div class="sr-ctrl"><label class="tog"><input type="checkbox"/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div>
+          <div class="sr"><div class="sr-info"><h4>JIT Provisioning</h4></div><div class="sr-ctrl"><label class="tog"><input type="checkbox" checked/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div>
+        </div>
+        <div class="card"><div class="ch"><div class="ct">SP-метаданные</div><span class="tag tg">Для вставки в IdP</span></div>
+          <div style="background:var(--bg3);border-radius:var(--rs);padding:12px;margin-bottom:12px;">
+            <div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="font-size:11px;color:var(--txt2);">Entity ID</span><span style="font-family:var(--mono);font-size:10.5px;color:var(--teal);">/saml/metadata</span></div>
+            <div style="display:flex;justify-content:space-between;padding:3px 0;"><span style="font-size:11px;color:var(--txt2);">ACS URL</span><span style="font-family:var(--mono);font-size:10.5px;color:var(--teal);">/saml/acs</span></div>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-s" style="flex:1;font-size:11px;">⬇ SP-метаданные XML</button>
+            <button class="btn btn-p" style="flex:1;font-size:11px;">▶ Тест SSO</button>
+          </div>
+          <div style="margin-top:12px;">
+            <div class="guide-step"><div class="guide-n">1</div><div class="guide-text">Keycloak: <strong>Realm → Clients → Create</strong>, тип <code>SAML</code></div></div>
+            <div class="guide-step"><div class="guide-n">2</div><div class="guide-text">Вставьте Entity ID и ACS URL</div></div>
+            <div class="guide-step" style="border-bottom:none;"><div class="guide-n">3</div><div class="guide-text">Нажмите <strong>▶ Тест SSO</strong></div></div>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="tc" id="l-attrs"><div class="card"><div class="ch"><div class="ct">Маппинг атрибутов LDAP → IVA 360</div><button class="btn btn-s">+ Кастомный</button></div><table><thead><tr><th>LDAP-атрибут</th><th>→</th><th>Поле</th><th>Обновлять</th><th>Обяз.</th></tr></thead><tbody id="attr-tbl"></tbody></table></div></div>
+    <div class="tc" id="l-groups"><div class="card"><div class="ch"><div class="ct">Правила автогруппировки</div><button class="btn btn-p">+ Правило</button></div><table><thead><tr><th>Приор.</th><th>Условие</th><th>→ Роль</th><th>→ Продукты</th><th></th></tr></thead><tbody><tr><td style="font-family:var(--mono);font-size:12px;">10</td><td style="font-family:var(--mono);font-size:11px;color:var(--teal);">memberOf = cn=Admins</td><td><span class="tag tr">Администратор</span></td><td style="font-size:11px;">Все</td><td><button class="btn btn-g" style="font-size:10px;">Ред.</button></td></tr></tbody></table></div></div>
+    <div class="tc" id="l-sync"><div class="g4" style="margin-bottom:14px;"><div class="sc"><div class="sv" style="color:var(--green);">—</div><div class="sl">Синхронизировано</div></div><div class="sc"><div class="sv" style="color:var(--amber);">—</div><div class="sl">Конфликтов</div></div><div class="sc"><div class="sv">—</div><div class="sl">Последняя</div></div><div class="sc"><div class="sv">Каждый час</div><div class="sl">Расписание</div></div></div><div class="card"><div class="ch"><div class="ct">История</div><button class="btn btn-p">▶ Синхронизировать</button></div><table><thead><tr><th>Дата</th><th>Статус</th><th>Создано</th><th>Обновлено</th><th>Ошибки</th></tr></thead><tbody><tr><td colspan="5" style="text-align:center;color:var(--txt3);padding:20px;font-size:12px;">LDAP не настроен</td></tr></tbody></table></div></div>
+  </div>
+</div>
+
+<!-- ══ ADMIN: NOTIFICATIONS ══ -->
+<div class="page" id="pg-notifications">
+  <div class="ph"><div><h1>Уведомления</h1></div></div>
+  <div class="card"><div class="ch"><div class="ct">Настройки оповещений</div><button class="btn btn-s">Тест</button></div><div id="notif-list"></div></div>
+</div>
+
+<!-- ══ ADMIN: MAIL ══ -->
+<div class="page" id="pg-mail">
+  <div class="ph"><div><h1>Почта</h1><p>Управление доменами, ящиками, группами, правилами</p></div><div class="ph-act"><span class="hchip hc-ok">Online</span></div></div>
+  <div class="tabs"><button class="tab on" onclick="stab('mail-t','m-dom',this)">Домены</button><button class="tab" onclick="stab('mail-t','m-box',this)">Ящики</button><button class="tab" onclick="stab('mail-t','m-grp',this)">Группы</button><button class="tab" onclick="stab('mail-t','m-rules',this)">Правила</button><button class="tab" onclick="stab('mail-t','m-queue',this)">Очередь</button><button class="tab" onclick="stab('mail-t','m-caldav',this)">CalDAV / EAS</button></div>
+  <div id="mail-t">
+    <div class="tc on" id="m-dom"><div class="card"><div class="ch"><div class="ct">Почтовые домены</div><button class="btn btn-p">+ Добавить</button></div><div id="dom-list"></div></div></div>
+    <div class="tc" id="m-box">
+      <div class="card"><div class="ch"><div class="ct">Почтовые ящики</div><div style="display:flex;gap:6px;"><input class="fi" placeholder="Поиск..." style="width:180px;"/><button class="btn btn-p">+ Создать</button></div></div>
+        <div class="notice ni-inf" style="margin-bottom:12px;">Администратор может сбросить пароль ящика или установить новый. Пользователь может создать <strong>пароль приложения</strong> для IMAP в своём профиле.</div>
+        <table><thead><tr><th><input type="checkbox"/></th><th>Пользователь</th><th>Email</th><th>Квота</th><th>Исп.</th><th>Статус</th><th></th></tr></thead><tbody id="mbox-t"></tbody></table>
+      </div>
+    </div>
+    <div class="tc" id="m-grp"><div class="g2"><div class="card"><div class="ch"><div class="ct">Группы рассылок</div><button class="btn btn-p">+ Создать</button></div><table><thead><tr><th>Группа</th><th>Адрес</th><th>Уч.</th><th></th></tr></thead><tbody><tr><td>Маркетинг</td><td style="font-family:var(--mono);font-size:11px;color:var(--txt3);">marketing@...</td><td>12</td><td><button class="btn btn-g" style="font-size:10px;">Ред.</button></td></tr><tr><td>Все сотрудники</td><td style="font-family:var(--mono);font-size:11px;color:var(--txt3);">all@...</td><td>247</td><td><button class="btn btn-g" style="font-size:10px;">Ред.</button></td></tr></tbody></table></div><div class="card"><div class="ch"><div class="ct">Общие ящики</div><button class="btn btn-p">+ Создать</button></div><table><thead><tr><th>Ящик</th><th>Адрес</th><th>Доступ</th><th></th></tr></thead><tbody><tr><td>Поддержка</td><td style="font-family:var(--mono);font-size:11px;color:var(--txt3);">support@...</td><td><span class="tag tb">3 чел.</span></td><td><button class="btn btn-g" style="font-size:10px;">Ред.</button></td></tr></tbody></table></div></div></div>
+    <div class="tc" id="m-rules"><div class="card"><div class="ch"><div class="ct">Правила обработки почты</div><button class="btn btn-p">+ Правило</button></div><table><thead><tr><th>Приор.</th><th>Условие</th><th>Действие</th><th>Статус</th><th></th></tr></thead><tbody><tr><td style="font-family:var(--mono);font-size:12px;">100</td><td style="font-size:12px;">От: @spam.ru</td><td><span class="tag tr">Отклонить</span></td><td><span class="tag tg">Вкл.</span></td><td><button class="btn btn-g" style="font-size:10px;">Ред.</button></td></tr></tbody></table></div></div>
+    <div class="tc" id="m-queue"><div class="g2"><div class="card"><div class="ch"><div class="ct">Очередь</div><div class="hchip hc-ok">Норма</div></div><div class="mm"><span class="mm-l">В очереди</span><span class="mm-v">14</span></div><div class="mm"><span class="mm-l">Отложенных</span><span class="mm-v" style="color:var(--amber);">3</span></div><div class="mm" style="border-bottom:none;"><span class="mm-l">Недоставленных</span><span class="mm-v" style="color:var(--red);">1</span></div></div><div class="card"><div class="ch"><div class="ct">Серверы</div></div><div class="mm"><span class="mm-l">SMTP</span><span class="hchip hc-ok">Online</span></div><div class="mm"><span class="mm-l">IMAP</span><span class="hchip hc-ok">Online</span></div><div class="mm" style="border-bottom:none;"><span class="mm-l">CalDAV</span><span class="hchip hc-ok">Online</span></div></div></div></div>
+    <div class="tc" id="m-caldav"><div class="card"><div class="ch"><div class="ct">CalDAV / CardDAV / ActiveSync</div></div><div class="sr" style="padding-top:0;"><div class="sr-info"><h4>CalDAV — Календари</h4></div><div class="sr-ctrl"><label class="tog"><input type="checkbox" checked/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div><div class="sr"><div class="sr-info"><h4>CardDAV — Адресная книга (GAL)</h4></div><div class="sr-ctrl"><label class="tog"><input type="checkbox" checked/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div><div class="sr"><div class="sr-info"><h4>ActiveSync (EAS) для мобильных</h4></div><div class="sr-ctrl"><label class="tog"><input type="checkbox" checked/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div><div class="sr"><div class="sr-info"><h4>Требовать PIN при EAS</h4></div><div class="sr-ctrl"><label class="tog"><input type="checkbox"/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div></div></div>
+  </div>
+</div>
+
+<!-- ══ ADMIN: MEETINGS ══ -->
+<div class="page" id="pg-mcu"><div class="ph"><div><h1>Встречи <span class="tag ta" style="font-size:11px;vertical-align:middle;">2/ этап (PaaS)</span></h1></div><div class="ph-act"><span class="hchip hc-ok">Online</span></div></div><div class="notice ni-wrn">Управление встречами доступно во 2-м этапе для PaaS-развёртывания.</div><div class="g4" style="margin-bottom:16px;"><div class="sc"><div class="sv" style="color:var(--green);">12</div><div class="sl">Активных встреч</div></div><div class="sc"><div class="sv">347</div><div class="sl">Участников онлайн</div></div><div class="sc"><div class="sv">128</div><div class="sl">Лицензий</div><div class="sbar"><div class="sfill" style="width:27%"></div></div></div><div class="sc"><div class="sv">1.8 ТБ</div><div class="sl">Записей</div></div></div></div>
+
+<!-- ══ ADMIN: DISK ══ -->
+<div class="page" id="pg-disk">
+  <div class="ph"><div><h1>Диск</h1><p>Квоты, общие диски, DLP, аудит</p></div><div class="ph-act"><span class="hchip hc-ok">Online</span></div></div>
+  <div class="g4" style="margin-bottom:20px;">
+    <div class="sc"><div class="sv">2.4 ТБ</div><div class="sl">Занято</div><div class="sbar"><div class="sfill" style="width:48%"></div></div></div>
+    <div class="sc"><div class="sv">10 ГБ</div><div class="sl">Квота / пользователь</div></div>
+    <div class="sc"><div class="sv">18</div><div class="sl">Общих дисков</div></div>
+    <div class="sc"><div class="sv">247</div><div class="sl">Хранилищ</div></div>
+  </div>
+  <div class="tabs"><button class="tab on" onclick="stab('disk-t','d-pol',this)">Политики</button><button class="tab" onclick="stab('disk-t','d-dlp',this)">DLP</button><button class="tab" onclick="stab('disk-t','d-sp',this)">По пользователям</button><button class="tab" onclick="stab('disk-t','d-sh',this)">Общие диски</button></div>
+  <div id="disk-t">
+    <div class="tc on" id="d-pol"><div class="card"><div class="ch"><div class="ct">Политики доступа</div></div><div class="sr" style="padding-top:0;"><div class="sr-info"><h4>Внешний шаринг</h4></div><div class="sr-ctrl"><label class="tog"><input type="checkbox" checked/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div><div class="sr"><div class="sr-info"><h4>Срок ссылки по умолчанию</h4></div><div class="sr-ctrl"><select class="fs" style="width:110px;"><option>1 день</option><option selected>7 дней</option><option>30 дней</option></select></div></div><div class="sr"><div class="sr-info"><h4>Передача файлов при offboarding</h4></div><div class="sr-ctrl"><select class="fs" style="width:160px;"><option selected>Передать руководителю</option><option>Архивировать</option></select></div></div></div></div>
+    <div class="tc" id="d-dlp"><div class="card"><div class="ch"><div class="ct">DLP и защита</div></div><div class="sr" style="padding-top:0;"><div class="sr-info"><h4>Антивирус при загрузке</h4></div><div class="sr-ctrl"><label class="tog"><input type="checkbox"/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div><div class="sr"><div class="sr-info"><h4>Запрет .exe, .msi, .bat</h4></div><div class="sr-ctrl"><label class="tog"><input type="checkbox" checked/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div><div class="sr"><div class="sr-info"><h4>Шифрование at-rest</h4></div><div class="sr-ctrl"><span class="hchip hc-ok">AES-256</span></div></div></div></div>
+    <div class="tc" id="d-sp"><div class="card"><div class="ch"><div class="ct">Квоты пользователей</div><div style="display:flex;gap:6px;"><button class="btn btn-s">Экспорт</button><button class="btn btn-d">Очистить выбр.</button></div></div><table><thead><tr><th><input type="checkbox"/></th><th>Пользователь</th><th>Занято</th><th>Квота</th><th>%</th><th></th></tr></thead><tbody id="st"></tbody></table></div></div>
+    <div class="tc" id="d-sh"><div class="card"><div class="ch"><div class="ct">Общие диски</div><button class="btn btn-p">+ Создать</button></div><table><thead><tr><th>Диск</th><th>Участников</th><th>Занято</th><th></th></tr></thead><tbody><tr><td>📁 Маркетинг</td><td>12</td><td>45 ГБ</td><td><button class="btn btn-g" style="font-size:10px;">Упр.</button></td></tr><tr><td>📁 Разработка</td><td>34</td><td>280 ГБ</td><td><button class="btn btn-g" style="font-size:10px;">Упр.</button></td></tr></tbody></table></div></div>
+  </div>
+</div>
+
+<!-- ══ ADMIN: BOARDS ══ -->
+<div class="page" id="pg-boards"><div class="ph"><div><h1>Доска <span class="tag tp" style="font-size:11px;vertical-align:middle;">3/ этап</span></h1></div></div><div class="notice ni-wrn">Управление досками планируется в 3-м этапе разработки.</div></div>
+
+<!-- ══ ADMIN: COLLABORA ══ -->
+<div class="page" id="pg-collab"><div class="ph"><div><h1>Документы (редактор) <span class="tag tgr" style="font-size:11px;vertical-align:middle;">4/ этап</span></h1></div><div class="ph-act"><span class="hchip hc-ok">Online</span></div></div><div class="notice ni-wrn">Управление редактором документов — 4-й этап.</div><div class="g2"><div class="sc"><div class="sv" style="color:var(--green);">34</div><div class="sl">Открыто сейчас</div></div><div class="sc"><div class="sv">3.2 ГБ</div><div class="sl">RAM</div></div></div></div>
+
+<!-- ══ ADMIN: SUBSCRIPTIONS ══ -->
+<div class="page" id="pg-subs">
+  <div class="ph"><div><h1>Подписки и лицензии</h1></div></div>
+  <div id="subs-grid"></div>
+</div>
+
+<!-- ══ PROFILES ══ -->
+<div class="page" id="pg-profiles">
+  <div class="ph"><div><h1>Мои профили <span class="stage s2" style="font-size:10px;padding:2px 7px;border-radius:10px;font-weight:600;">2/ этап</span></h1><p>Несколько организаций — один интерфейс. Как Google Workspace — отдельная почта, отдельный логин, но работать можно сразу со всеми.</p></div><div class="ph-act"><button class="btn btn-p" onclick="showModal('mod-add-profile')">+ Добавить профиль</button></div></div>
+  <div style="background:var(--bg3);border:1.5px solid rgba(124,58,237,.3);border-radius:var(--r);padding:16px;margin-bottom:20px;">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:12px;">
+      <div style="width:32px;height:32px;border-radius:8px;background:linear-gradient(135deg,var(--purple),var(--blue));display:flex;align-items:center;justify-content:center;font-size:14px;color:#fff;">⚡</div>
+      <div style="flex:1;"><div style="font-size:13px;font-weight:600;">Объединённый режим</div><div style="font-size:11px;color:var(--txt3);">Все профили в одном меню</div></div>
+      <label class="tog" id="unified-tog"><input type="checkbox" onchange="handleUnifiedTog(this.checked)"/><div class="tog-track"><div class="tog-thumb"></div></div></label>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:6px;" id="combined-items"></div>
+  </div>
+  <div class="g3" id="profiles-grid" style="margin-bottom:20px;"></div>
+  <div class="card"><div class="ct" style="margin-bottom:14px;">Что даёт объединённый режим</div>
+    <div class="g3">
+      <div style="background:var(--bg3);border-radius:var(--rs);padding:14px;"><div style="font-size:20px;margin-bottom:6px;">📬</div><div style="font-size:12.5px;font-weight:600;margin-bottom:3px;">Единый инбокс</div><div style="font-size:11.5px;color:var(--txt3);">Письма из всех профилей с цветовыми метками</div></div>
+      <div style="background:var(--bg3);border-radius:var(--rs);padding:14px;"><div style="font-size:20px;margin-bottom:6px;">📅</div><div style="font-size:12.5px;font-weight:600;margin-bottom:3px;">Общий календарь</div><div style="font-size:11.5px;color:var(--txt3);">Встречи без конфликтов расписания</div></div>
+      <div style="background:var(--bg3);border-radius:var(--rs);padding:14px;"><div style="font-size:20px;margin-bottom:6px;">💬</div><div style="font-size:12.5px;font-weight:600;margin-bottom:3px;">Объединённый чат</div><div style="font-size:11.5px;color:var(--txt3);">Сообщения с индикатором профиля</div></div>
+    </div>
+  </div>
+</div>
+
+  </div><!-- /body -->
+</div><!-- /main -->
+</div><!-- /shell -->
+
+<!-- ══ DRAWER ══ -->
+<div class="drawer-overlay" id="drawer-overlay" onclick="closeDrawer()"></div>
+<div class="drawer" id="role-drawer">
+  <div class="drawer-hdr"><div id="drawer-av" style="width:36px;height:36px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:14px;flex-shrink:0;"></div><div class="drawer-title" id="drawer-title">Роль</div><button class="modal-close" onclick="closeDrawer()">✕</button></div>
+  <div class="drawer-body" id="drawer-body"></div>
+  <div class="drawer-footer"><button class="btn btn-s" onclick="closeDrawer()">Отмена</button><button class="btn btn-d" id="drawer-del" style="display:none;">Удалить</button><button class="btn btn-p">Сохранить</button></div>
+</div>
+
+<!-- ══ MODALS ══ -->
+<div class="modal-bg" id="mod-invite"><div class="modal"><div class="modal-hdr"><div class="modal-title">Пригласить пользователя</div><button class="modal-close" onclick="hideModal('mod-invite')">✕</button></div><div class="fg"><label class="fl">Email</label><input class="fi" placeholder="user@example.com"/></div><div class="fg"><label class="fl">Роль</label><select class="fs"><option>Пользователь</option><option>Администратор</option><option>Финансы</option><option>Гость</option></select></div><div class="fg"><label class="fl">Отдел</label><input class="fi" placeholder="Маркетинг..."/></div><div class="fg"><label class="fl">Продукты</label><div style="display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;"><label style="display:flex;gap:5px;font-size:12px;cursor:pointer;"><input type="checkbox" checked/> Почта</label><label style="display:flex;gap:5px;font-size:12px;cursor:pointer;"><input type="checkbox" checked/> Диск</label><label style="display:flex;gap:5px;font-size:12px;cursor:pointer;"><input type="checkbox"/> Встречи</label><label style="display:flex;gap:5px;font-size:12px;cursor:pointer;"><input type="checkbox"/> Доска</label></div></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;"><button class="btn btn-s" onclick="hideModal('mod-invite')">Отмена</button><button class="btn btn-p">Отправить</button></div></div></div>
+
+<div class="modal-bg" id="mod-owner"><div class="modal"><div class="modal-hdr"><div class="modal-title">Смена владельца</div><button class="modal-close" onclick="hideModal('mod-owner')">✕</button></div><div class="notice ni-wrn">Требует подтверждения обеих сторон</div><div class="fg"><label class="fl">Email нового владельца</label><input class="fi" placeholder="new.owner@example.ru"/></div><div class="fg"><label class="fl">Причина</label><textarea class="fta" rows="2"></textarea></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;"><button class="btn btn-s" onclick="hideModal('mod-owner')">Отмена</button><button class="btn btn-p">Отправить запрос</button></div></div></div>
+
+<div class="modal-bg" id="mod-add-payer">
+  <div class="modal"><div class="modal-hdr"><div class="modal-title">Добавить плательщика</div><button class="modal-close" onclick="hideModal('mod-add-payer')">✕</button></div>
+    <div class="notice ni-inf" style="margin-bottom:14px;font-size:11.5px;">Плательщик — юрлицо для выставления счетов. Организация может иметь нескольких.</div>
+    <div class="tabs" style="margin-bottom:14px;"><button class="tab on" onclick="stab('pf-tabs','pf-main',this)">Основное</button><button class="tab" onclick="stab('pf-tabs','pf-bank',this)">Банк</button><button class="tab" onclick="stab('pf-tabs','pf-contact',this)">Контакт</button></div>
+    <div id="pf-tabs">
+      <div class="tc on" id="pf-main"><div class="fg"><label class="fl">Название юрлица <span style="color:var(--red);">*</span></label><input class="fi" id="payer-name-i" placeholder="ООО «Ромашка»"/></div><div class="g2"><div class="fg"><label class="fl">ИНН <span style="color:var(--red);">*</span></label><input class="fi" id="payer-inn-i" placeholder="7701234567" style="font-family:var(--mono)" maxlength="12"/></div><div class="fg"><label class="fl">КПП</label><input class="fi" placeholder="770101001" style="font-family:var(--mono)"/></div></div><div class="fg"><label class="fl">ОГРН</label><input class="fi" placeholder="1027700000001" style="font-family:var(--mono)"/></div><div class="fg"><label class="fl">Тип юрлица</label><select class="fs"><option>ООО</option><option>АО</option><option>ИП</option></select></div><div class="fg" style="margin-bottom:4px;"><label class="fl">Юридический адрес</label><input class="fi" placeholder="101000, г. Москва..."/></div><div class="sr" style="padding-top:8px;padding-bottom:0;border-bottom:none;"><div class="sr-info"><h4>Плательщик по умолчанию</h4></div><div class="sr-ctrl"><label class="tog"><input type="checkbox" id="payer-def-i"/><div class="tog-track"><div class="tog-thumb"></div></div></label></div></div></div>
+      <div class="tc" id="pf-bank"><div class="fg"><label class="fl">Банк</label><input class="fi" placeholder="ПАО Сбербанк"/></div><div class="fg"><label class="fl">БИК</label><input class="fi" placeholder="044525225" style="font-family:var(--mono)"/></div><div class="fg"><label class="fl">Расчётный счёт</label><input class="fi" placeholder="40702810938000123456" style="font-family:var(--mono)"/></div><div class="fg"><label class="fl">Кор. счёт</label><input class="fi" placeholder="30101810400000000225" style="font-family:var(--mono)"/></div></div>
+      <div class="tc" id="pf-contact"><div class="fg"><label class="fl">ФИО ответственного</label><input class="fi" placeholder="Иванов Иван Иванович"/></div><div class="fg"><label class="fl">Email для счетов</label><input class="fi" placeholder="buh@company.ru"/></div><div class="fg"><label class="fl">Телефон</label><input class="fi" placeholder="+7 (495)..."/></div><div class="fg"><label class="fl">Должность подписанта</label><input class="fi" placeholder="Генеральный директор"/></div></div>
+    </div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px;"><button class="btn btn-s" onclick="hideModal('mod-add-payer')">Отмена</button><button class="btn btn-p" onclick="addPayerConfirm()">Добавить</button></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="mod-new-order">
+  <div class="modal"><div class="modal-hdr"><div class="modal-title">Новый заказ</div><button class="modal-close" onclick="hideModal('mod-new-order')">✕</button></div>
+    <div style="display:flex;align-items:center;margin-bottom:18px;gap:4px;" id="ord-steps-bar">
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;" id="ostep-1"><div style="width:22px;height:22px;border-radius:50%;background:rgba(77,127,255,.2);color:var(--blue);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">1</div>Плательщик</div>
+      <div style="flex:1;height:1px;background:var(--line);margin:0 5px;"></div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--txt3);" id="ostep-2"><div style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">2</div>Состав</div>
+      <div style="flex:1;height:1px;background:var(--line);margin:0 5px;"></div>
+      <div style="display:flex;align-items:center;gap:5px;font-size:12px;color:var(--txt3);" id="ostep-3"><div style="width:22px;height:22px;border-radius:50%;border:1.5px solid var(--line2);display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;">3</div>Итог</div>
+    </div>
+    <div id="ord-s1"></div><div id="ord-s2" style="display:none;"></div><div id="ord-s3" style="display:none;"></div>
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px;"><button class="btn btn-s" id="ord-back" onclick="ordStep(-1)" style="display:none;">← Назад</button><button class="btn btn-s" onclick="hideModal('mod-new-order')">Отмена</button><button class="btn btn-p" id="ord-next" onclick="ordStep(1)">Далее →</button></div>
+  </div>
+</div>
+
+<div class="modal-bg" id="mod-add-profile"><div class="modal"><div class="modal-hdr"><div class="modal-title">Добавить профиль</div><button class="modal-close" onclick="hideModal('mod-add-profile')">✕</button></div><div class="notice ni-inf" style="margin-bottom:14px;font-size:11.5px;">Профиль — отдельный аккаунт в другой организации. Отдельная почта, отдельный логин.</div><div class="fg"><label class="fl">Способ</label><select class="fs"><option>По коду приглашения</option><option>Подключить существующий</option><option>Новая организация</option></select></div><div class="fg"><label class="fl">Код / ссылка приглашения</label><input class="fi" placeholder="Вставьте ссылку из письма..."/></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:18px;"><button class="btn btn-s" onclick="hideModal('mod-add-profile')">Отмена</button><button class="btn btn-p">Подключить</button></div></div></div>
+
+<div class="modal-bg" id="mod-create-apppass"><div class="modal"><div class="modal-hdr"><div class="modal-title">Создать пароль приложения</div><button class="modal-close" onclick="hideModal('mod-create-apppass')">✕</button></div><div class="notice ni-inf" style="margin-bottom:14px;font-size:11.5px;">Отдельный пароль для IMAP/SMTP. Основной пароль при этом не раскрывается.</div><div class="fg"><label class="fl">Название устройства</label><input class="fi" placeholder="Например: iPhone Mail, Thunderbird дом"/></div><div style="display:flex;gap:8px;justify-content:flex-end;margin-top:16px;"><button class="btn btn-s" onclick="hideModal('mod-create-apppass')">Отмена</button><button class="btn btn-p" onclick="createAppPass()">Создать пароль</button></div></div></div>
+
+<script>
+// ══════════ DATA ══════════
+const TARIFFS=[
+  {id:'start',name:'Стартовый',price:0,pricePer:'бесплатно',priceYear:null,color:'#16a34a',features:['Встречи до 50 участников','Мессенджер','Запись встреч','Диск (beta)'],limits:'До 25 пользователей',current:false},
+  {id:'team',name:'Командный',price:790,pricePer:'руб./чел./мес.',priceYear:632,color:'#2563eb',features:['Встречи до 100 участников','Вебинары до 500 слушателей','Корпоративная почта','AI субтитры','Диск 10 ГБ/чел.'],limits:'',current:false},
+  {id:'biz',name:'Бизнес',price:1490,pricePer:'руб./чел./мес.',priceYear:1192,color:'#7c3aed',features:['Встречи до 300 участников','Вебинары до 3 000 слушателей','SSO / LDAP интеграция','AI-ассистент встреч','Диск 25 ГБ/чел.','Приоритетная поддержка'],limits:'',current:true},
+  {id:'corp',name:'Корпоративный',price:null,pricePer:'По запросу',priceYear:null,color:'#d97706',features:['On-premise развёртывание','Персональный менеджер','SLA 99.98%','Реестр РП №14460','Неограниченные пользователи','Кастомный договор'],limits:'',current:false},
+];
+
+let PAYERS=[
+  {id:'p1',name:'Example Corp ООО',sn:'EC',inn:'7712345678',kpp:'771201001',bank:'ПАО Сбербанк',bik:'044525225',contact:'Смирнов А.И.',email:'billing@example-corp.ru',color:'#4d7fff',bg:'rgba(77,127,255,.15)',def:true,addr:'125009, Москва, ул. Примерная, д. 1'},
+  {id:'p2',name:'ТехСтарт ООО',sn:'ТС',inn:'7701987654',kpp:'770101001',bank:'АО Тинькофф',bik:'044525974',contact:'Петрова М.В.',email:'finance@techstart.ru',color:'#14c9a8',bg:'rgba(20,201,168,.15)',def:false,addr:'115419, Москва, ул. Технологическая, д. 5'},
+];
+
+const ORDERS_DATA=[
+  {id:'ORD-2025-001',name:'Подписка IVA 360 Бизнес Q1 2025',pname:'Example Corp ООО',date:'01.01.2025',amount:184000,status:'active',prods:['Встречи 128 лиц.','Почта 247 ящ.']},
+  {id:'ORD-2025-002',name:'Подписка IVA 360 Бизнес Q2 2025',pname:'Example Corp ООО',date:'01.04.2025',amount:184000,status:'paid',prods:['Встречи 128 лиц.','Почта 247 ящ.']},
+  {id:'ORD-2024-003',name:'Диск — ТехСтарт (ноябрь 2024)',pname:'ТехСтарт ООО',date:'15.11.2024',amount:48000,status:'paid',prods:['Диск 50 лиц.']},
+];
+const INVOICES_DATA=[
+  {id:'INV-2025-001',ord:'ORD-2025-001',amount:184000,payer:'Example Corp ООО',date:'01.01.2025',due:'15.01.2025',status:'pending'},
+  {id:'INV-2025-002',ord:'ORD-2025-002',amount:184000,payer:'Example Corp ООО',date:'01.04.2025',due:'15.04.2025',status:'paid'},
+  {id:'INV-2024-003',ord:'ORD-2024-003',amount:48000,payer:'ТехСтарт ООО',date:'15.11.2024',due:'30.11.2024',status:'paid'},
+];
+const DOCS_DATA=[
+  {n:'Акт №12 (Q2 2025)',t:'act',p:'Example Corp ООО',o:'ORD-2025-002',d:'30.04.2025',s:'142 КБ',ic:'📋',bg:'rgba(22,163,74,.12)'},
+  {n:'Счёт INV-2025-001',t:'invoice',p:'Example Corp ООО',o:'ORD-2025-001',d:'01.01.2025',s:'98 КБ',ic:'🧾',bg:'rgba(59,130,246,.12)'},
+  {n:'УПД №8 Q1 2025',t:'act',p:'Example Corp ООО',o:'ORD-2025-001',d:'31.03.2025',s:'210 КБ',ic:'📑',bg:'rgba(22,163,74,.12)'},
+  {n:'Договор №2024-0112',t:'contract',p:'Example Corp ООО',o:'—',d:'12.01.2024',s:'384 КБ',ic:'📜',bg:'rgba(217,119,6,.12)'},
+  {n:'Акт №7 (ТехСтарт)',t:'act',p:'ТехСтарт ООО',o:'ORD-2024-003',d:'30.11.2024',s:'138 КБ',ic:'📋',bg:'rgba(22,163,74,.12)'},
+  {n:'Договор №2024-0456',t:'contract',p:'ТехСтарт ООО',o:'—',d:'15.11.2024',s:'290 КБ',ic:'📜',bg:'rgba(217,119,6,.12)'},
+];
+const USERS_DATA=[
+  {n:'Александр Смирнов',e:'a.smirnov',role:'Суперадмин',dept:'ИТ',prods:['Почта','Диск','Встречи'],fa:true,login:'Сейчас',s:'active',src:'Ручной',i:'АС',c:'#4d7fff'},
+  {n:'Мария Иванова',e:'m.ivanova',role:'Администратор',dept:'ИТ',prods:['Почта','Диск'],fa:true,login:'2 мин',s:'active',src:'LDAP',i:'МИ',c:'#8b5cf6'},
+  {n:'Дмитрий Кузнецов',e:'d.kuznetsov',role:'Пользователь',dept:'Разработка',prods:['Почта','Встречи','Диск'],fa:false,login:'15 мин',s:'active',src:'SSO',i:'ДК',c:'#14c9a8'},
+  {n:'Анна Петрова',e:'a.petrova',role:'Финансы',dept:'Бухгалтерия',prods:['Почта'],fa:true,login:'1ч',s:'active',src:'Invite',i:'АП',c:'#ef4444'},
+  {n:'Сергей Волков',e:'s.volkov',role:'Гость',dept:'—',prods:['Встречи'],fa:false,login:'3 дня',s:'inactive',src:'Invite',i:'СВ',c:'#f59e0b'},
+  {n:'Игорь Морозов',e:'i.morozov',role:'Пользователь',dept:'Продажи',prods:['Почта'],fa:false,login:'5 дней',s:'blocked',src:'LDAP',i:'ИМ',c:'#555b70'},
+  {n:'Наталья Соколова',e:'n.sokolova',role:'Администратор',dept:'ИТ',prods:['Почта','Диск','Встречи'],fa:true,login:'30 мин',s:'active',src:'LDAP',i:'НС',c:'#8b5cf6'},
+];
+const STAG={active:'<span class="tag tg">Активен</span>',inactive:'<span class="tag tgr">Неактивен</span>',blocked:'<span class="tag tr">Заблокирован</span>'};
+const RTAG={'Суперадмин':'tr','Администратор':'tb','Пользователь':'tgr','Гость':'ta','Финансы':'ta'};
+const SRCTAG={'Ручной':'<span class="tag tgr" style="font-size:10px;">Ручной</span>','LDAP':'<span class="tag tc2" style="font-size:10px;">LDAP</span>','SSO':'<span class="tag tp" style="font-size:10px;">SSO</span>','Invite':'<span class="tag ta" style="font-size:10px;">Invite</span>'};
+
+const ALL_ROLES=[
+  {id:'sa',n:'Суперадмин',c:1,col:'#ef4444',bg:'rgba(239,68,68,.15)',em:'👑'},
+  {id:'adm',n:'Администратор',c:4,col:'#4d7fff',bg:'rgba(77,127,255,.15)',em:'🛡'},
+  {id:'fin',n:'Финансы',c:2,col:'#f59e0b',bg:'rgba(245,158,11,.15)',em:'💰'},
+  {id:'usr',n:'Пользователь',c:236,col:'#14c9a8',bg:'rgba(20,201,168,.15)',em:'👤'},
+  {id:'gst',n:'Гость',c:4,col:'#8892b0',bg:'rgba(136,146,176,.1)',em:'🔗'},
+  {id:'api',n:'API-клиент',c:0,col:'#10b981',bg:'rgba(16,185,129,.15)',em:'⚡'},
+];
+// Role-based menu visibility — this is the KEY architectural decision
+const ROLE_MENU_ACCESS={
+  sa:{users:true,roles:true,security:true,ldap:true,notifications:true,products:true,company:true,billing:true},
+  adm:{users:true,roles:true,security:true,ldap:false,notifications:true,products:true,company:true,billing:true},
+  fin:{users:false,roles:false,security:false,ldap:false,notifications:false,products:false,company:true,billing:true},
+  usr:{users:false,roles:false,security:false,ldap:false,notifications:false,products:false,company:false,billing:false},
+  gst:{users:false,roles:false,security:false,ldap:false,notifications:false,products:false,company:false,billing:false},
+};
+const PERM_CATS=[
+  {cat:'Компания и биллинг',items:[
+    {n:'Профиль компании',p:{sa:2,adm:2,fin:2,usr:0,gst:0,api:0}},
+    {n:'Плательщики',p:{sa:2,adm:2,fin:2,usr:0,gst:0,api:0}},
+    {n:'Заказы и счета',p:{sa:2,adm:2,fin:2,usr:0,gst:0,api:0}},
+    {n:'Документы',p:{sa:2,adm:2,fin:2,usr:0,gst:0,api:0}},
+    {n:'Управление подпиской',p:{sa:2,adm:0,fin:0,usr:0,gst:0,api:0}},
+  ]},
+  {cat:'Видимость разделов меню',items:[
+    {n:'Раздел: Пользователи',p:{sa:2,adm:2,fin:0,usr:0,gst:0,api:0}},
+    {n:'Раздел: Роли и доступы',p:{sa:2,adm:2,fin:0,usr:0,gst:0,api:0}},
+    {n:'Раздел: Безопасность',p:{sa:2,adm:2,fin:0,usr:0,gst:0,api:0}},
+    {n:'Раздел: LDAP / SSO',p:{sa:2,adm:0,fin:0,usr:0,gst:0,api:0}},
+    {n:'Раздел: Уведомления',p:{sa:2,adm:2,fin:0,usr:0,gst:0,api:0}},
+    {n:'Раздел: Продукты (Почта, Диск...)',p:{sa:2,adm:2,fin:0,usr:0,gst:0,api:1}},
+  ]},
+  {cat:'Пользователи',items:[
+    {n:'Создание / удаление пользователей',p:{sa:2,adm:2,fin:0,usr:0,gst:0,api:0}},
+    {n:'Сброс паролей',p:{sa:2,adm:2,fin:0,usr:0,gst:0,api:0}},
+    {n:'Блокировка',p:{sa:2,adm:2,fin:0,usr:0,gst:0,api:0}},
+    {n:'Просмотр списка',p:{sa:2,adm:2,fin:0,usr:0,gst:0,api:1}},
+  ]},
+  {cat:'Почта',items:[
+    {n:'Управление доменами',p:{sa:2,adm:2,fin:0,usr:0,gst:0,api:0}},
+    {n:'Создание / удаление ящиков',p:{sa:2,adm:2,fin:0,usr:0,gst:0,api:0}},
+    {n:'Сброс пароля ящика',p:{sa:2,adm:2,fin:0,usr:1,gst:0,api:0}},
+    {n:'Использование почты',p:{sa:2,adm:2,fin:2,usr:2,gst:0,api:0}},
+    {n:'Пароль приложения (IMAP)',p:{sa:2,adm:2,fin:1,usr:2,gst:0,api:0}},
+  ]},
+  {cat:'Диск',items:[
+    {n:'Управление квотами',p:{sa:2,adm:2,fin:0,usr:0,gst:0,api:0}},
+    {n:'Загрузка файлов',p:{sa:2,adm:2,fin:2,usr:2,gst:0,api:2}},
+    {n:'Общие диски (создание)',p:{sa:2,adm:2,fin:0,usr:1,gst:0,api:0}},
+  ]},
+];
+const PROFILES_DATA=[
+  {n:'Example Corp ООО',i:'EC',r:'Суперадмин',c:'#4d7fff',bg:'linear-gradient(135deg,#4d7fff,#8b5cf6)',prods:['Почта','Встречи','Диск','Доска'],cur:true},
+  {n:'TechStartup LLC',i:'TS',r:'Пользователь',c:'#14c9a8',bg:'linear-gradient(135deg,#14c9a8,#4d7fff)',prods:['Встречи','Документы'],cur:false},
+  {n:'FreeContract',i:'FC',r:'Гость',c:'#f59e0b',bg:'linear-gradient(135deg,#f59e0b,#ef4444)',prods:['Встречи'],cur:false},
+];
+const ATTRS_DATA=[
+  {l:'sAMAccountName',i:'Логин',u:true,r:true},{l:'mail',i:'Email',u:true,r:true},{l:'displayName',i:'Отображаемое имя',u:true,r:false},
+  {l:'department',i:'Отдел',u:true,r:false},{l:'title',i:'Должность',u:true,r:false},{l:'memberOf',i:'Роль (автогруппировка)',u:true,r:false},
+  {l:'thumbnailPhoto',i:'Аватар',u:false,r:false},{l:'userAccountControl',i:'Статус',u:true,r:false},
+];
+const NOTIFS_DATA=[
+  {n:'Новый пользователь',d:'Принял приглашение',em:true,push:true,wh:false},
+  {n:'Пользователь заблокирован',d:'Аккаунт заблокирован',em:true,push:true,wh:true},
+  {n:'Квота > 80%',d:'Критический уровень',em:true,push:false,wh:false},
+  {n:'Лицензии заканчиваются',d:'Менее 10% свободных',em:true,push:true,wh:false},
+  {n:'Подписка истекает',d:'До конца менее 30 дней',em:true,push:false,wh:false},
+  {n:'Вход с нового IP (admin)',d:'Новое устройство',em:true,push:true,wh:false},
+  {n:'2FA отключена у admin',d:'Снизился уровень безопасности',em:true,push:true,wh:true},
+  {n:'LDAP ошибка синхронизации',d:'Синхронизация завершилась с ошибкой',em:true,push:false,wh:false},
+];
+
+// ══════════ RENDERS ══════════
+function renderUsers(){
+  const t=document.getElementById('ut');if(!t)return;
+  t.innerHTML=USERS_DATA.map(u=>`<tr>
+    <td><input type="checkbox"/></td>
+    <td><div style="display:flex;align-items:center;gap:8px;"><div style="width:30px;height:30px;border-radius:50%;background:${u.c}22;color:${u.c};display:flex;align-items:center;justify-content:center;font-size:11px;font-weight:700;flex-shrink:0;">${u.i}</div><div><div style="font-weight:500;">${u.n}</div><div style="font-size:10.5px;color:var(--txt3);font-family:var(--mono);">${u.e}@</div></div></div></td>
+    <td><span class="tag ${RTAG[u.role]||'tgr'}">${u.role}</span></td>
+    <td style="font-size:12px;color:var(--txt2);">${u.dept}</td>
+    <td><div style="display:flex;flex-wrap:wrap;gap:2px;">${u.prods.map(p=>`<span class="tag tgr" style="font-size:9.5px;">${p}</span>`).join('')}</div></td>
+    <td style="text-align:center;">${u.fa?'<span class="tag tg" style="font-size:10px;">✓</span>':'<span class="tag tr" style="font-size:10px;">✗</span>'}</td>
+    <td style="font-size:11px;color:var(--txt3);">${u.login}</td>
+    <td>${SRCTAG[u.src]||''}</td>
+    <td>${STAG[u.s]}</td>
+    <td><div style="display:flex;gap:2px;"><button class="btn btn-g" style="font-size:10px;padding:3px 5px;">👤</button><button class="btn btn-g" style="font-size:10px;padding:3px 5px;">🔑</button><button class="btn btn-g" style="font-size:10px;padding:3px 5px;color:var(--red);">${u.s==='blocked'?'↩':'⛔'}</button></div></td>
+  </tr>`).join('');
+}
+
+function renderPayers(){
+  const g=document.getElementById('payers-grid'),e=document.getElementById('payers-empty');
+  if(!g)return;
+  if(!PAYERS.length){g.style.display='none';if(e)e.style.display='block';return;}
+  g.style.display='grid';if(e)e.style.display='none';
+  g.innerHTML=PAYERS.map(p=>`<div class="payer-card ${p.def?'def':''}">
+    ${p.def?'<div style="position:absolute;top:10px;right:10px;"><span class="tag tc2" style="font-size:9px;">По умолчанию</span></div>':''}
+    <div style="width:36px;height:36px;border-radius:8px;background:${p.bg};color:${p.color};display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:700;margin-bottom:10px;">${p.sn}</div>
+    <div style="font-size:13px;font-weight:600;margin-bottom:3px;">${p.name}</div>
+    <div style="font-size:11px;color:var(--txt3);font-family:var(--mono);">ИНН: ${p.inn}${p.kpp?' · КПП: '+p.kpp:''}</div>
+    <div style="font-size:11px;color:var(--txt3);margin-top:3px;">${p.addr}</div>
+    <div style="font-size:11.5px;color:var(--txt2);margin-top:8px;display:flex;flex-direction:column;gap:2px;"><span>🏦 ${p.bank} · БИК ${p.bik}</span><span>👤 ${p.contact} · ${p.email}</span></div>
+    <div style="display:flex;gap:6px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line);">
+      <button class="btn btn-s" style="font-size:11px;flex:1;" onclick="showModal('mod-add-payer')">Редактировать</button>
+      ${!p.def?`<button class="btn btn-teal" style="font-size:11px;flex:1;" onclick="setPayerDef('${p.id}')">Осн.</button>`:''}
+      <button class="btn btn-g" style="font-size:11px;" onclick="go('orders')">Заказы →</button>
+    </div>
+  </div>`).join('');
+}
+function setPayerDef(id){PAYERS.forEach(p=>p.def=p.id===id);renderPayers();}
+function addPayerConfirm(){
+  const n=document.getElementById('payer-name-i')?.value;
+  const inn=document.getElementById('payer-inn-i')?.value;
+  if(!n||!inn){alert('Заполните Название и ИНН');return;}
+  const def=document.getElementById('payer-def-i')?.checked;
+  if(def)PAYERS.forEach(p=>p.def=false);
+  const cs=['#4d7fff','#8b5cf6','#14c9a8','#f59e0b'];
+  const c=cs[PAYERS.length%cs.length];
+  PAYERS.push({id:'p'+Date.now(),name:n,sn:n.substring(0,2).toUpperCase(),inn,kpp:'',bank:'',bik:'',contact:'',email:'',color:c,bg:c+'26',def,addr:''});
+  hideModal('mod-add-payer');renderPayers();
+}
+
+function renderOrders(){
+  const el=document.getElementById('orders-list');if(!el)return;
+  const ST={active:{cls:'ta',l:'Активный'},paid:{cls:'tg',l:'Оплачен'},cancelled:{cls:'tr',l:'Отменён'}};
+  el.innerHTML=ORDERS_DATA.map(o=>`<div class="order-row">
+    <div class="ord-num">${o.id}</div>
+    <div class="ord-info"><div class="ord-name">${o.name}</div><div class="ord-meta"><span>📅 ${o.date}</span><span>🏢 ${o.pname}</span></div></div>
+    <span class="tag ${ST[o.status].cls}">${ST[o.status].l}</span>
+    <div class="ord-amt">₽ ${o.amount.toLocaleString('ru')}<div class="ord-amt-lbl">в год</div></div>
+  </div>`).join('');
+  const ig=document.getElementById('invoices-grid');if(!ig)return;
+  const IS={pending:{cls:'ta',l:'Ожидает'},paid:{cls:'tg',l:'Оплачен'}};
+  ig.innerHTML=INVOICES_DATA.map(inv=>`<div class="inv-card">
+    <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:10px;"><span class="inv-num">${inv.id}</span><span class="tag ${IS[inv.status].cls}" style="font-size:10px;">${IS[inv.status].l}</span></div>
+    <div style="font-size:11px;color:var(--txt2);">Заказ: ${inv.ord}</div>
+    <div class="inv-amount">₽ ${inv.amount.toLocaleString('ru')}</div>
+    <div style="font-size:11px;color:var(--txt3);">Выставлен: ${inv.date} · До: ${inv.due}</div>
+    <div style="font-size:11px;color:var(--txt3);margin-top:3px;">🏢 ${inv.payer}</div>
+    <div style="display:flex;gap:6px;margin-top:12px;padding-top:10px;border-top:1px solid var(--line);">
+      <button class="btn btn-s" style="flex:1;font-size:11px;">⬇ PDF</button>
+      ${inv.status==='pending'?`<button class="btn btn-p" style="flex:1;font-size:11px;">Оплатить</button>`:''}
+    </div>
+  </div>`).join('');
+}
+
+function renderDocs(f){
+  const d=f?DOCS_DATA.filter(x=>x.t===f):DOCS_DATA;
+  return d.map(x=>`<div class="doc-row">
+    <div class="doc-icon" style="background:${x.bg};">${x.ic}</div>
+    <div style="flex:1;"><div style="font-size:12.5px;font-weight:500;">${x.n}</div><div style="font-size:11px;color:var(--txt3);margin-top:1px;display:flex;gap:8px;">${[x.d,'🏢 '+x.p,x.o!=='—'?x.o:'',x.s].filter(Boolean).join(' · ')}</div></div>
+    <div style="display:flex;gap:4px;"><button class="btn btn-g" style="font-size:11px;padding:4px 8px;">⬇</button><button class="btn btn-g" style="font-size:11px;padding:4px 8px;">👁</button></div>
+  </div>`).join('');
+}
+
+function renderTariffs(containerId){
+  const el=document.getElementById(containerId);if(!el)return;
+  el.innerHTML='<div class="g4" style="margin-bottom:16px;">'+TARIFFS.map(t=>`
+    <div class="tariff-card ${t.current?'current':''}" style="border-color:${t.current?t.color:'var(--line)'};">
+      ${t.current?`<div style="font-size:9px;font-weight:700;color:${t.color};text-transform:uppercase;letter-spacing:.8px;margin-bottom:8px;">✓ Текущий тариф</div>`:''}
+      <div style="font-size:16px;font-weight:700;color:${t.color};margin-bottom:8px;">${t.name}</div>
+      <div class="tariff-price" style="color:${t.color};">${t.price===0?'0 ₽':t.price===null?'—':'₽ '+t.price.toLocaleString('ru')}</div>
+      <div class="tariff-per">${t.pricePer}${t.priceYear?` · при оплате за год: ₽ ${t.priceYear}/чел./мес.`:''}</div>
+      <div class="div"></div>
+      ${t.features.map(f=>`<div class="tariff-feature">${f}</div>`).join('')}
+      ${t.limits?`<div style="font-size:10.5px;color:var(--txt3);margin-top:6px;">${t.limits}</div>`:''}
+      <div style="margin-top:14px;">${t.current?'<button class="btn btn-s" style="width:100%;font-size:11.5px;">Текущий план</button>':t.price===null?'<button class="btn btn-s" style="width:100%;font-size:11.5px;">Связаться с менеджером</button>':`<button class="btn btn-p" style="width:100%;font-size:11.5px;background:${t.color};">Перейти на план</button>`}</div>
+    </div>`).join('')+'</div>';
+}
+
+function renderAttrTable(){
+  const t=document.getElementById('attr-tbl');if(!t)return;
+  t.innerHTML=ATTRS_DATA.map(a=>`<tr>
+    <td style="font-family:var(--mono);font-size:12px;color:var(--teal);">${a.l}</td>
+    <td style="color:var(--txt3);font-size:12px;">→</td>
+    <td style="font-size:12.5px;">${a.i}</td>
+    <td style="text-align:center;"><label class="tog"><input type="checkbox" ${a.u?'checked':''}/><div class="tog-track"><div class="tog-thumb"></div></div></label></td>
+    <td style="text-align:center;"><label class="tog"><input type="checkbox" ${a.r?'checked':''}/><div class="tog-track"><div class="tog-thumb"></div></div></label></td>
+  </tr>`).join('');
+}
+
+function renderNotifications(){
+  const el=document.getElementById('notif-list');if(!el)return;
+  el.innerHTML=NOTIFS_DATA.map(n=>`<div class="notif-row">
+    <div style="flex:1;"><div style="font-size:12.5px;font-weight:500;">${n.n}</div><div style="font-size:11px;color:var(--txt3);margin-top:1px;">${n.d}</div></div>
+    <div style="display:flex;gap:5px;flex-shrink:0;align-items:center;">
+      <label class="tog" style="gap:4px;"><input type="checkbox" ${n.em?'checked':''}/><div class="tog-track"><div class="tog-thumb"></div></div></label><span style="font-size:9.5px;color:var(--txt3);">Email</span>
+      <label class="tog" style="margin-left:6px;gap:4px;"><input type="checkbox" ${n.push?'checked':''}/><div class="tog-track"><div class="tog-thumb"></div></div></label><span style="font-size:9.5px;color:var(--txt3);">Push</span>
+      <label class="tog" style="margin-left:6px;gap:4px;"><input type="checkbox" ${n.wh?'checked':''}/><div class="tog-track"><div class="tog-thumb"></div></div></label><span style="font-size:9.5px;color:var(--txt3);">Webhook</span>
+    </div>
+  </div>`).join('');
+}
+
+function renderAudit(){
+  const el=document.getElementById('audit-log');if(!el)return;
+  [['Сег. 14:12','<strong>Смирнов А.</strong> изменил роль → Волков С.'],['Сег. 11:34','<strong>Иванова М.</strong> сбросила пароль'],['Вчера 16:22','<strong>Смирнов А.</strong> заблокировал пользователя']].forEach(([t,x])=>{el.innerHTML+=`<div class="li" style="display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--line);"><span style="font-size:10.5px;color:var(--txt3);min-width:80px;">${t}</span><span style="font-size:12px;color:var(--txt2);">${x}</span></div>`;});
+}
+
+function renderStorage(){
+  const t=document.getElementById('st');if(!t)return;
+  [{u:'d.kuznetsov',n:'Кузнецов Д.',used:9.2,q:10,c:'var(--red)'},{u:'a.petrov',n:'Петров А.',used:7.8,q:10,c:'var(--amber)'},{u:'m.ivanova',n:'Иванова М.',used:4.5,q:10,c:'var(--blue)'}].forEach(d=>{
+    const p=Math.round(d.used/d.q*100);
+    t.innerHTML+=`<tr><td><input type="checkbox"/></td><td><div style="font-weight:500;">${d.n}</div><div style="font-size:10.5px;font-family:var(--mono);color:var(--txt3);">${d.u}@</div></td><td>${d.used} ГБ</td><td style="color:var(--txt3);">${d.q} ГБ</td><td><div style="display:flex;align-items:center;gap:8px;"><div class="pr" style="width:80px;"><div class="pf" style="width:${p}%;background:${d.c};"></div></div><span style="font-size:10px;color:var(--txt3);">${p}%</span></div></td><td><button class="btn btn-g" style="font-size:11px;color:var(--red);">Очистить</button></td></tr>`;
+  });
+}
+
+function renderDomains(){
+  const el=document.getElementById('dom-list');if(!el||el.children.length)return;
+  [{n:'example-corp.ru',ok:true,primary:true,dkim:true,spf:true,dmarc:true},{n:'corp.example.ru',ok:true,primary:false,dkim:true,spf:true,dmarc:false},{n:'test-domain.ru',ok:false,primary:false,dkim:false,spf:true,dmarc:false}].forEach(d=>{
+    el.innerHTML+=`<div style="display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid var(--line);">
+      <div style="width:8px;height:8px;border-radius:50%;background:${d.ok?'var(--green)':'var(--amber)'};flex-shrink:0;"></div>
+      <div style="font-size:13px;font-weight:500;flex:1;">${d.n}${d.primary?' <span class="tag tb" style="font-size:9px;">Основной</span>':''}</div>
+      <div style="display:flex;gap:4px;"><span class="tag ${d.dkim?'tg':'tr'}" style="font-size:9px;">DKIM</span><span class="tag ${d.spf?'tg':'tr'}" style="font-size:9px;">SPF</span><span class="tag ${d.dmarc?'tg':'tr'}" style="font-size:9px;">DMARC</span></div>
+      <button class="btn btn-g" style="font-size:10px;padding:3px 8px;">Настр.</button>
+    </div>`;
+  });
+}
+
+function renderMboxes(){
+  const t=document.getElementById('mbox-t');if(!t||t.children.length)return;
+  [{u:'Смирнов А.',e:'a.smirnov@example-corp.ru',q:25,used:4.2,s:'active'},{u:'Иванова М.',e:'m.ivanova@example-corp.ru',q:25,used:12.8,s:'active'},{u:'Морозов И.',e:'i.morozov@example-corp.ru',q:10,used:2.1,s:'blocked'}].forEach(m=>{
+    const p=Math.round(m.used/m.q*100);const c=p>80?'var(--red)':p>60?'var(--amber)':'var(--blue)';
+    t.innerHTML+=`<tr><td><input type="checkbox"/></td><td><div style="font-weight:500;">${m.u}</div><div style="font-size:10.5px;font-family:var(--mono);color:var(--txt3);">${m.e}</div></td><td style="font-family:var(--mono);font-size:11px;">${m.e.split('@')[0]}</td><td>${m.q} ГБ</td><td><div style="display:flex;align-items:center;gap:6px;"><div class="pr" style="width:70px;"><div class="pf" style="width:${p}%;background:${c};"></div></div><span style="font-size:10px;color:var(--txt3);">${m.used}G</span></div></td><td>${m.s==='blocked'?'<span class="tag tr">Заблок.</span>':'<span class="tag tg">Активен</span>'}</td><td><div style="display:flex;gap:2px;"><button class="btn btn-g" style="font-size:10px;padding:3px 5px;">🔑 Сброс</button><button class="btn btn-g" style="font-size:10px;padding:3px 5px;">📦 Квота</button></div></td></tr>`;
+  });
+}
+
+function renderProfiles(){
+  const g=document.getElementById('profiles-grid');if(!g)return;
+  g.innerHTML=PROFILES_DATA.map((p,i)=>`<div style="background:var(--bg3);border:1.5px solid ${p.cur?'var(--blue)':'var(--line)'};border-radius:var(--r);padding:14px;cursor:pointer;transition:all .18s;" onclick="">
+    <div style="display:flex;align-items:center;gap:10px;margin-bottom:10px;">
+      <div style="width:36px;height:36px;border-radius:9px;background:${p.bg};color:#fff;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;flex-shrink:0;">${p.i}</div>
+      <div><div style="font-size:13px;font-weight:600;">${p.n}</div><div style="font-size:11px;color:var(--txt3);margin-top:1px;">${p.r}</div></div>
+      ${p.cur?'<div style="margin-left:auto;font-size:9px;font-weight:700;color:var(--blue);background:rgba(77,127,255,.15);padding:2px 7px;border-radius:10px;">Текущий</div>':''}
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:4px;margin-bottom:10px;">${p.prods.map(pr=>`<span class="tag tgr" style="font-size:10px;">${pr}</span>`).join('')}</div>
+    <div style="display:flex;gap:6px;padding-top:10px;border-top:1px solid var(--line);">
+      ${!p.cur?`<button class="btn btn-p" style="flex:1;font-size:11px;" onclick="switchProf(${i})">Переключиться</button>`:'<button class="btn btn-teal" style="flex:1;font-size:11px;">Текущий ✓</button>'}
+      <button class="btn btn-s" style="font-size:11px;padding:6px 8px;">⚙</button>
+    </div>
+  </div>`).join('');
+  const ci=document.getElementById('combined-items');if(!ci)return;
+  ci.innerHTML=PROFILES_DATA.map(p=>`<div style="display:inline-flex;align-items:center;gap:6px;background:var(--bg4);border-radius:20px;padding:4px 10px;font-size:11.5px;color:var(--txt2);"><div style="width:7px;height:7px;border-radius:50%;background:${p.c};"></div>${p.n} · ${p.r}</div>`).join('');
+}
+
+// ══════════ ROLES MATRIX ══════════
+let selRoles=new Set(['adm','fin']);
+let compareMode=false;
+
+function renderRolePicker(){
+  const c=document.getElementById('role-picker');if(!c)return;
+  c.innerHTML='';
+  ALL_ROLES.forEach(r=>{
+    const on=selRoles.has(r.id);
+    const d=document.createElement('div');
+    d.className='role-pill'+(on?' active':'');
+    d.style.color=r.col;if(on)d.style.borderColor=r.col;
+    d.innerHTML=`<span class="rp-dot" style="background:${r.col}"></span>${r.n}<span style="font-size:10px;opacity:.6;margin-left:2px;">(${r.c})</span>${on?'<span class="rp-rm">×</span>':''}`;
+    d.addEventListener('click',e=>{
+      if(e.target.classList.contains('rp-rm')){selRoles.delete(r.id);}
+      else if(selRoles.has(r.id)){selRoles.delete(r.id);}
+      else if(selRoles.size<3){selRoles.add(r.id);}
+      renderRolePicker();renderMatrix();
+    });
+    c.appendChild(d);
+  });
+  const add=document.createElement('div');add.className='rp-add';add.textContent='+ Создать роль';add.onclick=()=>openDrawer(null);c.appendChild(add);
+  const mc=document.getElementById('matrix-count');if(mc)mc.textContent=selRoles.size;
+}
+const PI={2:'✓',1:'◐',0:'✗'};const PIC={2:'perm-yes',1:'perm-part',0:'perm-no'};
+function renderMatrix(){
+  const roles=[...selRoles].map(id=>ALL_ROLES.find(r=>r.id===id)).filter(Boolean);
+  const th=document.getElementById('matrix-thead');const tb=document.getElementById('matrix-tbody');if(!th||!tb)return;
+  th.innerHTML=`<tr><th style="width:240px;min-width:200px;">Функция</th>${roles.map(r=>`<th style="text-align:center;"><div class="role-hdr-card" onclick="openDrawer('${r.id}')"><div class="rh-av" style="background:${r.bg};color:${r.col};">${r.em}</div><div class="rh-name">${r.n}</div><div class="rh-count">${r.c} чел.</div></div></th>`).join('')}</tr>`;
+  let rows='';
+  PERM_CATS.forEach(cat=>{
+    rows+=`<tr class="cat-row"><td colspan="${roles.length+1}">${cat.cat}</td></tr>`;
+    cat.items.forEach(item=>{
+      const vals=roles.map(r=>item.p[r.id]??0);
+      const diff=compareMode&&new Set(vals).size>1;
+      rows+=`<tr class="${diff?'compare-diff':''}"><td style="padding:10px 14px;font-size:12.5px;border-bottom:1px solid var(--line);">${item.n}</td>${roles.map(r=>{const v=item.p[r.id]??0;return`<td style="text-align:center;padding:10px 8px;border-bottom:1px solid var(--line);"><span class="perm-icon ${PIC[v]}">${PI[v]}</span></td>`;}).join('')}</tr>`;
+    });
+  });
+  tb.innerHTML=rows;
+}
+function toggleCompare(on){compareMode=on;renderMatrix();}
+
+function openDrawer(roleId){
+  const r=roleId?ALL_ROLES.find(x=>x.id===roleId):null;
+  document.getElementById('drawer-title').textContent=r?`Роль: ${r.n}`:'Создать роль';
+  const av=document.getElementById('drawer-av');av.style.background=r?r.bg:'rgba(77,127,255,.15)';av.style.color=r?r.col:'var(--blue)';av.textContent=r?r.em:'✦';
+  document.getElementById('drawer-del').style.display=r&&r.id!=='sa'?'inline-flex':'none';
+  const body=document.getElementById('drawer-body');
+  let html=`<div class="fg"><label class="fl">Название роли</label><input class="fi" value="${r?r.n:''}"/></div><div class="fg"><label class="fl">Описание</label><input class="fi" placeholder="Краткое описание прав"/></div>`;
+  if(r&&ROLE_MENU_ACCESS[r.id]){
+    html+=`<div class="div"></div><div style="font-size:11px;font-weight:600;color:var(--txt2);margin-bottom:8px;text-transform:uppercase;letter-spacing:.5px;">Разделы меню (видимость)</div>`;
+    const acc=ROLE_MENU_ACCESS[r.id];
+    Object.entries({users:'Пользователи',roles:'Роли и доступы',security:'Безопасность',ldap:'LDAP/SSO',notifications:'Уведомления',products:'Продукты',company:'Компания',billing:'Биллинг'}).forEach(([k,label])=>{
+      html+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid var(--line);"><span style="font-size:12.5px;">${label}</span><label class="tog"><input type="checkbox" ${acc[k]?'checked':''}/><div class="tog-track"><div class="tog-thumb"></div></div></label></div>`;
+    });
+  }
+  html+=`<div class="div"></div>`;
+  PERM_CATS.forEach(cat=>{
+    html+=`<div style="font-size:10px;font-weight:700;color:var(--txt3);text-transform:uppercase;letter-spacing:.7px;margin:10px 0 6px;">${cat.cat}</div>`;
+    cat.items.forEach(item=>{const v=r?item.p[r.id]??0:0;html+=`<div style="display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px solid var(--line);"><span style="font-size:12.5px;">${item.n}</span><div class="perm-btns"><button class="pb yes ${v===2?'active':''}" onclick="setPerm(this,2)">✓</button><button class="pb part ${v===1?'active':''}" onclick="setPerm(this,1)">◐</button><button class="pb no ${v===0?'active':''}" onclick="setPerm(this,0)">✗</button></div></div>`;});
+  });
+  body.innerHTML=html;
+  document.getElementById('drawer-overlay').classList.add('on');
+  document.getElementById('role-drawer').classList.add('on');
+}
+function setPerm(btn,v){btn.closest('.perm-btns').querySelectorAll('.pb').forEach(b=>b.classList.remove('active'));btn.classList.add('active');}
+function closeDrawer(){document.getElementById('drawer-overlay').classList.remove('on');document.getElementById('role-drawer').classList.remove('on');}
+
+// ══════════ ORDER FLOW ══════════
+let ordStepN=1,ordSelPayer=null;
+const PROD_CAT=[
+  {id:'mcu',n:'Встречи',unit:'лицензий',up:1490,qty:128},
+  {id:'mail',n:'Почта',unit:'ящиков',up:790,qty:247},
+  {id:'drive',n:'Диск',unit:'ТБ',up:12000,qty:5},
+  {id:'collab',n:'Документы (редактор)',unit:'лицензий',up:800,qty:50},
+  {id:'boards',n:'Доска',unit:'лицензий',up:600,qty:50},
+];
+function renderOrdS1(){
+  const el=document.getElementById('ord-s1');if(!el)return;
+  ordSelPayer=ordSelPayer||PAYERS.find(p=>p.def)?.id||PAYERS[0]?.id;
+  if(!PAYERS.length){el.innerHTML=`<div class="empty-box" style="border-color:var(--amber);"><div class="ei" style="font-size:26px;">🏦</div><h3>Нет плательщиков</h3><p>Добавьте плательщика</p></div><button class="btn btn-teal" style="width:100%;margin-top:10px;" onclick="showModal('mod-add-payer')">+ Добавить плательщика</button>`;return;}
+  el.innerHTML=`<div style="font-size:11px;font-weight:600;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Выберите плательщика</div>`+
+  PAYERS.map(p=>`<div class="payer-pick payer-card ${ordSelPayer===p.id?'sel':''}" onclick="selPayerOrd('${p.id}')" style="margin-bottom:8px;padding:12px;">
+    <div style="display:flex;align-items:center;gap:10px;"><div style="width:32px;height:32px;border-radius:7px;background:${p.bg};color:${p.color};display:flex;align-items:center;justify-content:center;font-size:12px;font-weight:700;flex-shrink:0;">${p.sn}</div>
+    <div style="flex:1;"><div style="font-size:13px;font-weight:600;">${p.name}</div><div style="font-size:11px;color:var(--txt3);font-family:var(--mono);">ИНН: ${p.inn}</div></div>
+    ${p.def?'<span class="tag tc2" style="font-size:9px;">По умолч.</span>':''}
+    <div style="width:18px;height:18px;border-radius:50%;border:2px solid ${ordSelPayer===p.id?'var(--blue)':'var(--line2)'};display:flex;align-items:center;justify-content:center;flex-shrink:0;">${ordSelPayer===p.id?'<div style="width:10px;height:10px;border-radius:50%;background:var(--blue);"></div>':''}</div>
+    </div>
+  </div>`).join('')+
+  `<div class="div"></div><button class="btn btn-teal" style="width:100%;" onclick="showModal('mod-add-payer')">+ Добавить нового плательщика</button>`;
+}
+function selPayerOrd(id){ordSelPayer=id;renderOrdS1();}
+function renderOrdS2(){
+  const el=document.getElementById('ord-s2');if(!el)return;
+  el.innerHTML=`<div style="font-size:11px;font-weight:600;color:var(--txt2);text-transform:uppercase;letter-spacing:.5px;margin-bottom:10px;">Состав заказа</div>`+
+  PROD_CAT.map(p=>`<div style="display:flex;align-items:center;gap:10px;padding:10px 12px;background:var(--bg3);border-radius:var(--rs);border:1px solid var(--line);margin-bottom:6px;">
+    <input type="checkbox" id="pc-${p.id}" onchange="calcOrdTotal()" style="cursor:pointer;width:15px;height:15px;"/>
+    <div style="flex:1;"><div style="font-size:13px;font-weight:500;">${p.n}</div><div style="font-size:11px;color:var(--txt3);">₽ ${p.up.toLocaleString('ru')} / ${p.unit}</div></div>
+    <input type="number" id="qq-${p.id}" value="${p.qty}" min="1" style="width:70px;background:var(--bg4);border:1px solid var(--line2);border-radius:var(--rs);padding:5px 8px;color:var(--txt);font-size:12px;text-align:center;font-family:var(--mono);" onchange="calcOrdTotal()"/>
+    <span style="font-size:11px;color:var(--txt3);min-width:38px;">${p.unit}</span>
+    <div style="min-width:90px;text-align:right;font-size:13px;font-weight:600;" id="pa-${p.id}">—</div>
+  </div>`).join('')+
+  `<div class="div"></div><div style="display:flex;align-items:center;justify-content:space-between;"><span style="font-size:12px;color:var(--txt2);">Итого / год:</span><span style="font-size:20px;font-weight:700;" id="ord-total">₽ 0</span></div>`;
+}
+function calcOrdTotal(){
+  let tot=0;PROD_CAT.forEach(p=>{const cb=document.getElementById('pc-'+p.id);const q=parseInt(document.getElementById('qq-'+p.id)?.value||p.qty);const a=document.getElementById('pa-'+p.id);if(cb?.checked){tot+=p.up*q;if(a)a.textContent='₽ '+(p.up*q).toLocaleString('ru');}else if(a)a.textContent='—';});
+  const el=document.getElementById('ord-total');if(el)el.textContent='₽ '+tot.toLocaleString('ru');
+}
+function renderOrdS3(){
+  const el=document.getElementById('ord-s3');if(!el)return;
+  const payer=PAYERS.find(p=>p.id===ordSelPayer);
+  const prods=PROD_CAT.filter(p=>document.getElementById('pc-'+p.id)?.checked);
+  let tot=0;prods.forEach(p=>{const q=parseInt(document.getElementById('qq-'+p.id)?.value||p.qty);tot+=p.up*q;});
+  el.innerHTML=`<div style="background:var(--bg3);border-radius:var(--rs);padding:16px;margin-bottom:12px;">
+    <div class="mm"><span class="mm-l">Плательщик</span><div style="text-align:right;"><div style="font-size:13px;font-weight:500;">${payer?.name||'—'}</div><div style="font-size:11px;color:var(--txt3);font-family:var(--mono);">ИНН: ${payer?.inn||'—'}</div></div></div>
+    ${prods.map(p=>{const q=parseInt(document.getElementById('qq-'+p.id)?.value||p.qty);return`<div class="mm"><span class="mm-l">${p.n}</span><span class="mm-v">₽ ${(p.up*q).toLocaleString('ru')}</span></div>`;}).join('')}
+    <div class="mm" style="border-top:2px solid var(--line2);padding-top:12px;margin-top:4px;"><span style="font-size:13px;font-weight:600;">Итого / год</span><span style="font-size:20px;font-weight:700;color:var(--blue);">₽ ${tot.toLocaleString('ru')}</span></div>
+  </div><div class="fg"><label class="fl">Комментарий</label><textarea class="fta" rows="2" placeholder="Необязательно"></textarea></div>`;
+}
+function ordStep(dir){
+  if(!PAYERS.length&&ordStepN===1&&dir>0){showModal('mod-add-payer');return;}
+  ordStepN=Math.max(1,Math.min(3,ordStepN+dir));
+  for(let i=1;i<=3;i++){const el=document.getElementById('ord-s'+i);if(el)el.style.display=i===ordStepN?'block':'none';}
+  document.getElementById('ord-back').style.display=ordStepN>1?'inline-flex':'none';
+  document.getElementById('ord-next').textContent=ordStepN===3?'Оформить заказ ✓':'Далее →';
+  // update steps indicator
+  for(let i=1;i<=3;i++){const s=document.getElementById('ostep-'+i);if(!s)continue;const num=s.querySelector('div');if(num){num.style.background=i<ordStepN?'rgba(16,185,129,.2)':i===ordStepN?'rgba(77,127,255,.2)':'transparent';num.style.borderColor=i<ordStepN?'var(--green)':i===ordStepN?'var(--blue)':'var(--line2)';num.style.color=i<ordStepN?'var(--green)':i===ordStepN?'var(--blue)':'var(--txt3)';if(i<ordStepN){num.style.border='1.5px solid var(--green)';}else if(i===ordStepN){num.style.border='none';}else{num.style.border='1.5px solid var(--line2)';};}s.style.color=i<=ordStepN?'var(--txt)':'var(--txt3)';}
+  if(ordStepN===2)renderOrdS2();
+  if(ordStepN===3)renderOrdS3();
+}
+
+// ══════════ PROFILE SWITCHER ══════════
+let profDropOpen=false,unifiedMode=false;
+const PROF_CONF=[
+  {i:'АС',bg:'linear-gradient(135deg,#4d7fff,#8b5cf6)',dot:'#4d7fff',n:'Александр Смирнов',s:'Example Corp · Суперадмин'},
+  {i:'АС',bg:'linear-gradient(135deg,rgba(20,201,168,.7),rgba(77,127,255,.6))',dot:'#14c9a8',n:'Александр Смирнов',s:'TechStartup LLC · Пользователь'},
+  {i:'АС',bg:'linear-gradient(135deg,rgba(245,158,11,.6),rgba(239,68,68,.5))',dot:'#f59e0b',n:'Александр Смирнов',s:'FreeContract · Гость'},
+];
+function toggleProfDrop(){
+  profDropOpen=!profDropOpen;
+  document.getElementById('prof-drop').classList.toggle('on',profDropOpen);
+  document.getElementById('prof-trigger').classList.toggle('open',profDropOpen);
+  document.getElementById('prof-chev').style.transform=profDropOpen?'rotate(180deg)':'';
+  if(profDropOpen)setTimeout(()=>document.addEventListener('click',closeDropOut),0);
+}
+function closeDropOut(e){
+  if(!document.getElementById('prof-drop').contains(e.target)&&!document.getElementById('prof-trigger').contains(e.target)){
+    profDropOpen=false;['prof-drop','prof-trigger'].forEach(id=>{const el=document.getElementById(id);if(id==='prof-drop')el.classList.remove('on');else el.classList.remove('open');});document.getElementById('prof-chev').style.transform='';document.removeEventListener('click',closeDropOut);
+  }
+}
+function switchProf(idx){
+  const p=PROF_CONF[idx];
+  const av=document.getElementById('prof-av');
+  av.style.transition='transform .15s,opacity .15s';av.style.transform='scale(.8)';av.style.opacity='.5';
+  setTimeout(()=>{document.getElementById('prof-init').textContent=p.i;av.style.background=p.bg;document.getElementById('prof-mdot').style.background=p.dot;document.getElementById('prof-name-el').textContent=p.n;document.getElementById('prof-sub-el').textContent=p.s;av.style.transform='scale(1)';av.style.opacity='1';},120);
+  document.querySelectorAll('#prof-drop .pd-item').forEach((el,i)=>{el.classList.toggle('cur',i===idx);const old=el.querySelector('.pchk');if(old)old.remove();if(i===idx){const s=document.createElement('span');s.className='pchk';s.style.cssText='color:var(--blue);font-size:13px;';s.textContent='✓';el.appendChild(s);}});
+  profDropOpen=false;document.getElementById('prof-drop').classList.remove('on');document.getElementById('prof-trigger').classList.remove('open');document.getElementById('prof-chev').style.transform='';
+  PROFILES_DATA.forEach((x,i)=>x.cur=i===idx);
+  if(document.getElementById('pg-profiles')?.classList.contains('on'))renderProfiles();
+}
+function toggleUnified(){
+  unifiedMode=!unifiedMode;
+  document.getElementById('u-chk').style.display=unifiedMode?'':'none';
+  document.getElementById('unified-bar').style.display=unifiedMode?'flex':'none';
+  document.getElementById('sb-unified').style.display=unifiedMode?'block':'none';
+  const tog=document.querySelector('#unified-tog input');if(tog)tog.checked=unifiedMode;
+}
+function handleUnifiedTog(on){
+  unifiedMode=on;
+  document.getElementById('u-chk').style.display=on?'':'none';
+  document.getElementById('unified-bar').style.display=on?'flex':'none';
+  document.getElementById('sb-unified').style.display=on?'block':'none';
+}
+
+// ══════════ MODE SWITCHING ══════════
+let isAdmin=true;
+function setMode(mode){
+  isAdmin=mode==='admin';
+  document.body.className=isAdmin?'admin-mode':'user-mode';
+
+  document.getElementById('opt-admin').classList.toggle('on',isAdmin);
+  document.getElementById('opt-user').classList.toggle('on',!isAdmin);
+
+  document.getElementById('user-nav').style.display=isAdmin?'none':'flex';
+  document.getElementById('admin-nav').style.display=isAdmin?'flex':'none';
+  document.getElementById('user-nav').style.flexDirection='column';
+
+  const badge=document.getElementById('hdr-mode-badge');
+  if(isAdmin){badge.style.background='rgba(77,127,255,.12)';badge.style.borderColor='rgba(77,127,255,.2)';badge.style.color='var(--blue)';badge.textContent='⚙ Режим: Администратор';}
+  else{badge.style.background='rgba(0,176,139,.12)';badge.style.borderColor='rgba(0,176,139,.2)';badge.style.color='var(--teal)';badge.textContent='👤 Режим: Пользователь';}
+
+  if(!isAdmin)go('dashboard');
+  else go('users');
+}
+
+// ══════════ NAVIGATION ══════════
+const PAGES={
+  dashboard:{t:'Дашборд',s:'Дашборд',b:'Главное'},
+  'u-mail':{t:'Почта и календарь',s:'Почта',b:'Личный кабинет'},
+  'u-disk':{t:'Диск',s:'Мои файлы',b:'Личный кабинет'},
+  'u-tariffs':{t:'Тарифы',s:'Тарифы и оплата',b:'Подписка'},
+  users:{t:'Пользователи',s:'Пользователи',b:'Администрирование'},
+  roles:{t:'Роли и доступы',s:'Роли',b:'Администрирование'},
+  security:{t:'Безопасность',s:'Безопасность',b:'Администрирование'},
+  ldap:{t:'LDAP / SSO',s:'LDAP/SSO',b:'Администрирование'},
+  notifications:{t:'Уведомления',s:'Уведомления',b:'Администрирование'},
+  general:{t:'Профиль компании',s:'Профиль',b:'Компания'},
+  orders:{t:'Заказы и счета',s:'Заказы',b:'Компания'},
+  docs:{t:'Документы',s:'Документы',b:'Компания'},
+  mail:{t:'Почта',s:'Почта',b:'Продукты'},
+  mcu:{t:'Встречи',s:'Встречи',b:'Продукты'},
+  disk:{t:'Диск',s:'Диск',b:'Продукты'},
+  boards:{t:'Доска',s:'Доска',b:'Продукты'},
+  collab:{t:'Документы (редактор)',s:'Документы',b:'Продукты'},
+  subs:{t:'Подписки',s:'Подписки',b:'Биллинг'},
+  profiles:{t:'Мои профили',s:'Профили',b:'Аккаунт'},
+};
+function go(name){
+  const p=PAGES[name];if(!p)return;
+  document.querySelectorAll('.page').forEach(e=>e.classList.remove('on'));
+  const pg=document.getElementById('pg-'+name);if(pg)pg.classList.add('on');
+  document.querySelectorAll('.ni').forEach(e=>e.classList.remove('on'));
+  const ni=document.getElementById('ni-'+name);if(ni)ni.classList.add('on');
+  document.getElementById('ht').textContent=p.t;
+  document.getElementById('hs').textContent=p.s;
+  document.getElementById('hb').textContent=p.b;
+  // Data loading
+  if(name==='users')renderUsers();
+  if(name==='roles'){renderRolePicker();renderMatrix();}
+  if(name==='security')renderAudit();
+  if(name==='ldap')renderAttrTable();
+  if(name==='notifications')renderNotifications();
+  if(name==='general')renderPayers();
+  if(name==='orders')renderOrders();
+  if(name==='docs'){['docs-list','acts-list','contr-list','inv-pdf-list'].forEach((id,i)=>{const el=document.getElementById(id);if(el)el.innerHTML=renderDocs(i===0?null:['act','contract','invoice'][i-1]);});}
+  if(name==='mail'){renderDomains();renderMboxes();}
+  if(name==='disk')renderStorage();
+  if(name==='subs')renderTariffs('subs-grid');
+  if(name==='u-tariffs')renderTariffs('tariffs-grid');
+  if(name==='profiles')renderProfiles();
+}
+function stab(gId,tId,btn){
+  const g=document.getElementById(gId);if(!g)return;
+  g.querySelectorAll('.tc').forEach(t=>t.classList.remove('on'));
+  const tc=document.getElementById(tId);if(tc)tc.classList.add('on');
+  const ts=btn?.closest('.tabs');if(ts)ts.querySelectorAll('.tab').forEach(t=>t.classList.remove('on'));
+  if(btn)btn.classList.add('on');
+  if(tId==='g-payers')renderPayers();
+}
+function showModal(id){
+  document.getElementById(id)?.classList.add('on');
+  if(id==='mod-new-order'){
+    ordStepN=1;ordSelPayer=PAYERS.find(p=>p.def)?.id||PAYERS[0]?.id;
+    ['ord-s1','ord-s2','ord-s3'].forEach((s,i)=>{const el=document.getElementById(s);if(el)el.style.display=i===0?'block':'none';});
+    document.getElementById('ord-back').style.display='none';
+    document.getElementById('ord-next').textContent='Далее →';
+    renderOrdS1();
+  }
+}
+function hideModal(id){document.getElementById(id)?.classList.remove('on');}
+document.querySelectorAll('.modal-bg').forEach(m=>m.addEventListener('click',e=>{if(e.target===m)m.classList.remove('on');}));
+
+function createAppPass(){
+  hideModal('mod-create-apppass');
+  const newPass=Math.random().toString(36).slice(2,6)+'-'+Math.random().toString(36).slice(2,6)+'-'+Math.random().toString(36).slice(2,6);
+  const modal=document.createElement('div');
+  modal.className='modal-bg on';
+  modal.innerHTML=`<div class="modal" style="max-width:420px;"><div class="modal-hdr"><div class="modal-title">Пароль приложения создан</div></div><div class="notice ni-ok">Сохраните этот пароль — он показывается только один раз!</div><div style="background:var(--bg3);border-radius:var(--rs);padding:14px;text-align:center;font-family:var(--mono);font-size:16px;font-weight:600;letter-spacing:2px;color:var(--teal);margin-bottom:12px;">${newPass}</div><div style="font-size:12px;color:var(--txt2);margin-bottom:16px;">Используйте этот пароль вместо основного для подключения IMAP/SMTP клиентов.</div><button class="btn btn-p" style="width:100%;" onclick="this.closest('.modal-bg').remove()">Понятно, сохранил</button></div>`;
+  document.body.appendChild(modal);
+}
+
+document.addEventListener('DOMContentLoaded',()=>go('users'));
+</script>
+</body>
+</html>

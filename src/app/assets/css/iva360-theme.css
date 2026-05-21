@@ -12,6 +12,7 @@
   --color-foreground: var(--foreground);
   --color-foreground-hover: var(--foreground-hover);
   --color-primary: var(--primary);
+  --color-primary-50: var(--brand-50);
   --color-primary-foreground: var(--primary-foreground);
   --color-secondary: var(--secondary);
   --color-secondary-foreground: var(--secondary-foreground);

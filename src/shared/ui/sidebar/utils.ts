@@ -3,6 +3,8 @@ import { createContext } from "reka-ui"
 
 export const SIDEBAR_COOKIE_NAME = "sidebar_state"
 export const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7
+/** Tailwind `lg` — sidebar uses mobile sheet below this width. */
+export const SIDEBAR_MOBILE_BREAKPOINT = 1024
 export const SIDEBAR_WIDTH = "280px"
 export const SIDEBAR_WIDTH_MOBILE = "18rem"
 export const SIDEBAR_WIDTH_ICON = "3rem"
