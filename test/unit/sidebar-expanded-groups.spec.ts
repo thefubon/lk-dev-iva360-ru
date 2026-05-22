@@ -34,4 +34,20 @@ describe('applySavedOpenSections', () => {
       'admin-integrations': false,
     })
   })
+
+  it('reads nested section expandable keys', () => {
+    const sectionConfig = [
+      {
+        type: 'section' as const,
+        key: 'main',
+        items: [
+          { type: 'item' as const, key: 'meetings', title: 'Meetings', children: [{ title: 'A', href: '/a' }] },
+        ],
+      },
+    ]
+    expect(collectExpandableMenuKeys(sectionConfig)).toEqual(['meetings'])
+    expect(
+      applySavedOpenSections({ meetings: false }, { meetings: true }, sectionConfig),
+    ).toEqual({ meetings: true })
+  })
 })

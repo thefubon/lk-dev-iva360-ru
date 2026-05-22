@@ -1,23 +1,43 @@
-import type { Component } from 'vue'
 import {
-  Blocks,
-  BookMarked,
-  Briefcase,
-  ChartNoAxesColumnIncreasing,
-  CreditCard,
-  FileCode2,
-  LayoutPanelLeft,
-  Library,
-  ListTodo,
-  User,
-  UserPlus,
-} from 'lucide-vue-next'
+  Analytics01Icon,
+  ApiIcon,
+  Briefcase01Icon,
+  ComputerVideoCallIcon,
+  CreditCardIcon,
+  DashboardSpeed01Icon,
+  DashboardSquare01Icon,
+  Delete02Icon,
+  FolderLibraryIcon,
+  FolderShared01Icon,
+  LibraryIcon,
+  TimelineListIcon,
+  WebDesign01Icon,
+  HierarchyFilesIcon,
+  Home04Icon,
+  InboxIcon,
+  BookOpen01Icon,
+  Mic02Icon,
+  Package01Icon,
+  Profile02Icon,
+  ProfileIcon,
+  ServerStack01Icon,
+  ShieldKeyIcon,
+  Tag01Icon,
+  UserMultiple02Icon,
+} from '@hugeicons/core-free-icons'
+import type { IconArray } from '@hugeicons/vue'
+import type { Component } from 'vue'
 import { IVA360_PRODUCT_ORIGIN } from '@lib/iva360-external-origin'
 import type { ProductIconKey } from './app-sidebar-nav-product-icons'
 
 export type { ProductIconKey } from './app-sidebar-nav-product-icons'
 
 export type SidebarNavDivider = {
+  type: 'divider'
+  key: string
+}
+
+export type SidebarNavSubDivider = {
   type: 'divider'
   key: string
 }
@@ -29,6 +49,13 @@ export type SidebarNavSubItem = {
   disabled?: boolean
   /** Подпункт открывается в новой вкладке (без иконки в списке, как у внутренних подпунктов). */
   externalUrl?: string
+  icon?: IconArray | Component
+}
+
+export type SidebarNavSubEntry = SidebarNavSubItem | SidebarNavSubDivider
+
+export function isSidebarNavSubDivider(sub: SidebarNavSubEntry): sub is SidebarNavSubDivider {
+  return 'type' in sub && sub.type === 'divider'
 }
 
 export type SidebarNavMenuItem = {
@@ -39,169 +66,237 @@ export type SidebarNavMenuItem = {
   href?: string
   /** Внешняя ссылка: новая вкладка + иконка arrow-up-right, как в Figma. */
   externalUrl?: string
-  icon?: Component
+  icon?: IconArray | Component
   productIcon?: ProductIconKey
   disabled?: boolean
   tooltip?: string
   defaultOpen?: boolean
-  children?: SidebarNavSubItem[]
+  children?: SidebarNavSubEntry[]
   /** Шеврон и раскрытие без подпунктов (подпункты добавятся позже). */
   expandable?: boolean
 }
 
-export type SidebarNavEntry = SidebarNavDivider | SidebarNavMenuItem
+export type SidebarNavSection = {
+  type: 'section'
+  key: string
+  /** Заголовок секции; если не задан — секция без подписи. */
+  title?: string
+  items: SidebarNavMenuItem[]
+}
 
-const EXTERNAL_ORIGIN = IVA360_PRODUCT_ORIGIN
+export type SidebarNavEntry = SidebarNavDivider | SidebarNavMenuItem | SidebarNavSection
 
-/**
- * Навигация по макету Figma (node 25614:41224): порядок, названия, разделители,
- * продуктовые иконки из `app/assets/img/icons/solid/`, Lucide для остальных.
- * Внешние URL — заглушки на домен продукта; замените на реальные сервисы.
- */
+/** Пользовательское меню сайдбара — наполняется постепенно с нуля. */
 export const navMenuConfig: SidebarNavEntry[] = [
   {
-    type: 'item',
-    key: 'dashboard',
-    title: 'Рабочий стол',
-    href: '/',
-    icon: LayoutPanelLeft,
-  },
-  { type: 'divider', key: 'd-after-dashboard' },
-
-  {
-    type: 'item',
-    key: 'meetings',
-    title: 'Встречи и вебинары',
-    productIcon: 'meetings',
-    children: [
-      { title: 'Встречи', href: '/meetings' },
-      { title: 'Вебинары', href: '/meetings/webinars' },
-      { title: 'Комнаты', href: '/meetings/rooms' },
+    type: 'section',
+    key: 'main',
+    items: [
+      {
+        type: 'item',
+        key: 'dashboard',
+        title: 'Рабочий стол',
+        href: '/',
+        icon: Home04Icon,
+      },
+      {
+        type: 'item',
+        key: 'admin-panel',
+        title: 'Панель администратора',
+        href: '/admin',
+        icon: DashboardSpeed01Icon,
+      },
     ],
   },
   {
-    type: 'item',
-    key: 'messenger',
-    title: 'Мессенджер',
-    productIcon: 'messenger',
-    externalUrl: `${EXTERNAL_ORIGIN}/messenger`,
-  },
-  {
-    type: 'item',
-    key: 'drive',
-    title: 'Диск и документы',
-    productIcon: 'drive',
-    children: [
-      { title: 'Мои файлы', href: '/drive' },
-      { title: 'Корпоративное пространство', href: '/drive/team' },
-      { title: 'Есть доступ', href: '/drive/shared' },
-      { title: 'Корзина', href: '/drive/trash' },
+    type: 'section',
+    key: 'subscriptions',
+    title: 'Подписки',
+    items: [
+      {
+        type: 'item',
+        key: 'meetings-webinars',
+        title: 'Встречи и вебинары',
+        productIcon: 'meetings',
+        expandable: true,
+        children: [
+          { title: 'Встречи', href: '/meetings', icon: Mic02Icon },
+          { title: 'Вебинары', href: '/meetings/webinars', icon: ComputerVideoCallIcon },
+          { title: 'Комнаты', href: '/meetings/rooms', icon: DashboardSquare01Icon },
+        ],
+      },
+      {
+        type: 'item',
+        key: 'drive',
+        title: 'Диск и документы',
+        productIcon: 'drive',
+        expandable: true,
+        children: [
+          { title: 'Мои файлы', href: '/drive', icon: FolderLibraryIcon },
+          { title: 'Корп. пространство', href: '/drive/team', icon: HierarchyFilesIcon },
+          { type: 'divider', key: 'drive-sub-divider' },
+          { title: 'Есть доступ', href: '/drive/shared', icon: FolderShared01Icon },
+          { title: 'Корзина', href: '/drive/trash', icon: Delete02Icon },
+        ],
+      },
+      {
+        type: 'item',
+        key: 'mail',
+        title: 'Почта и календарь',
+        productIcon: 'mail',
+        expandable: true,
+        children: [
+          { title: 'Почтовые ящики', href: '/mail', icon: InboxIcon },
+          { title: 'Почтовые домены', href: '/mail/domains', icon: WebDesign01Icon },
+        ],
+      },
+      {
+        type: 'item',
+        key: 'messenger',
+        title: 'Мессенджер',
+        productIcon: 'messenger',
+        externalUrl: `${IVA360_PRODUCT_ORIGIN}/messenger`,
+      },
+      {
+        type: 'item',
+        key: 'board',
+        title: 'Интерактивная доска',
+        productIcon: 'boards',
+        externalUrl: `${IVA360_PRODUCT_ORIGIN}/board`,
+      },
     ],
   },
   {
-    type: 'item',
-    key: 'mail',
-    title: 'Почта и календарь',
-    productIcon: 'mail',
-    children: [
-      { title: 'Почтовые ящики', href: '/mail' },
-      { title: 'Почтовые домены', href: '/mail/domains' },
-    ],
-  },
-  {
-    type: 'item',
-    key: 'board',
-    title: 'Интерактивная доска',
-    productIcon: 'boards',
-    externalUrl: `${EXTERNAL_ORIGIN}/board`,
-  },
-  { type: 'divider', key: 'd-after-products' },
-
-  {
-    type: 'item',
+    type: 'section',
     key: 'users',
     title: 'Пользователи',
-    icon: UserPlus,
-    defaultOpen: true,
-    children: [
-      { title: 'Сотрудники', href: '/users/employees' },
-      { title: 'Подписки', href: '/users/products' },
+    items: [
+      {
+        type: 'item',
+        key: 'users-employees',
+        title: 'Управление пользователями',
+        href: '/users/employees',
+        icon: UserMultiple02Icon,
+      },
+      {
+        type: 'item',
+        key: 'profile',
+        title: 'Мой профиль',
+        href: '/profile',
+        icon: Profile02Icon,
+      },
     ],
   },
   {
-    type: 'item',
-    key: 'integration',
+    type: 'section',
+    key: 'integrations',
     title: 'Интеграции',
-    icon: FileCode2,
-    children: [
-      { title: 'Обзор', href: '/integration' },
-      { title: 'Настройки API', href: '/integration/api' },
-      { title: 'Настройки LDAP', href: '/integration/ldap' },
-      { title: 'Настройки SSO', href: '/integration/sso' },
+    items: [
+      {
+        type: 'item',
+        key: 'integrations-ldap',
+        title: 'Настройки LDAP',
+        href: '/integration/ldap',
+        icon: ServerStack01Icon,
+      },
+      {
+        type: 'item',
+        key: 'integrations-sso',
+        title: 'Настройки SSO',
+        href: '/integration/sso',
+        icon: ShieldKeyIcon,
+      },
+      {
+        type: 'item',
+        key: 'integrations-api',
+        title: 'Настройки API',
+        href: '/integration/api',
+        icon: ApiIcon,
+      },
     ],
   },
   {
-    type: 'item',
-    key: 'profile',
-    title: 'Мой профиль',
-    icon: User,
-    href: '/profile',
-  },
-  { type: 'divider', key: 'd-after-admin' },
-
-  {
-    type: 'item',
-    key: 'company',
-    title: 'Моя компания',
-    icon: Briefcase,
-    href: '/company',
-  },
-  {
-    type: 'item',
-    key: 'products-orders',
+    type: 'section',
+    key: 'billing',
     title: 'Подписки и заказы',
-    icon: Blocks,
-    children: [
-      /** Отдельный URL от «Пользователи → Подписки» (`/users/products`), чтобы активный пункт и контекст раздела не дублировались. */
-      { title: 'Мои продукты', href: '/billing/products' },
-      { title: 'Мои заказы', href: '/billing/orders' },
+    items: [
+      {
+        type: 'item',
+        key: 'users-subscriptions',
+        title: 'Управление подписками',
+        href: '/users/products',
+        icon: ProfileIcon,
+      },
+      {
+        type: 'item',
+        key: 'billing-subscriptions',
+        title: 'Мои подписки',
+        href: '/billing/products',
+        icon: CreditCardIcon,
+      },
+      {
+        type: 'item',
+        key: 'billing-orders',
+        title: 'Мои заказы',
+        href: '/billing/orders',
+        icon: Package01Icon,
+      },
     ],
   },
   {
-    type: 'item',
-    key: 'tariffs',
-    title: 'Тарифы',
-    icon: CreditCard,
-    externalUrl: `${EXTERNAL_ORIGIN}/tariffs`,
+    type: 'section',
+    key: 'company-management',
+    title: 'Управление компанией',
+    items: [
+      {
+        type: 'item',
+        key: 'company',
+        title: 'Моя компания',
+        href: '/company',
+        icon: Briefcase01Icon,
+      },
+      {
+        type: 'item',
+        key: 'statistics',
+        title: 'Статистика',
+        href: '/statistics',
+        icon: Analytics01Icon,
+      },
+      {
+        type: 'item',
+        key: 'tariffs',
+        title: 'Тарифы',
+        externalUrl: `${IVA360_PRODUCT_ORIGIN}/tariffs`,
+        icon: Tag01Icon,
+      },
+    ],
   },
   {
-    type: 'item',
-    key: 'statistics',
-    title: 'Статистика',
-    icon: ChartNoAxesColumnIncreasing,
-    href: '/statistics',
-  },
-  { type: 'divider', key: 'd-after-billing' },
-
-  {
-    type: 'item',
-    key: 'kb',
-    title: 'База знаний',
-    icon: BookMarked,
-    externalUrl: `${EXTERNAL_ORIGIN}/docs`,
-  },
-  {
-    type: 'item',
-    key: 'roadmap',
-    title: 'Дорожная карта',
-    icon: ListTodo,
-    href: '/roadmap',
-  },
-  {
-    type: 'item',
-    key: 'platform-docs',
-    title: 'Документы платформы',
-    icon: Library,
-    href: '/platform-docs',
+    type: 'section',
+    key: 'documents',
+    title: 'Документы',
+    items: [
+      {
+        type: 'item',
+        key: 'roadmap',
+        title: 'Дорожная карта',
+        href: '/roadmap',
+        icon: TimelineListIcon,
+      },
+      {
+        type: 'item',
+        key: 'platform-docs',
+        title: 'Документы платформы',
+        href: '/platform-docs',
+        icon: LibraryIcon,
+      },
+      {
+        type: 'item',
+        key: 'kb',
+        title: 'База знаний',
+        externalUrl: `${IVA360_PRODUCT_ORIGIN}/docs`,
+        icon: BookOpen01Icon,
+      },
+    ],
   },
 ]

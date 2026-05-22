@@ -1,6 +1,9 @@
 <script setup lang="ts">
+import { ArrowTurnBackwardIcon } from '@hugeicons/core-free-icons'
 import { Monitor } from 'lucide-vue-next'
 import { toast } from 'vue-sonner'
+import { DEFAULT_USER_ROUTE } from '@lib/app-mode-routes'
+import { cn } from '@lib/utils'
 import { Button } from '@/shared/ui/button'
 import {
   Sidebar,
@@ -12,13 +15,25 @@ import {
   useSidebar,
 } from '@/shared/ui/sidebar'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
-import { useAppMode } from '@lib/use-app-mode'
+import {
+  sidebarNavIdleHoverClass,
+  sidebarNavRowBaseClass,
+  sidebarNavRowGroupClass,
+} from './app-sidebar-nav-product-surface'
 import { adminNavMenuConfig } from './app-sidebar-admin-nav.config'
 import AppSidebarNav from './AppSidebarNav.vue'
+import AppSidebarNavLegacy from './_archive/sidebar-nav/AppSidebarNav.vue'
 import Iva360Logo from './Iva360Logo.vue'
 
 const { isMobile, state } = useSidebar()
-const { isAdminMode } = useAppMode()
+const { isAdminRoute } = useAppRoute()
+
+const adminBackLinkClass = cn(
+  sidebarNavRowGroupClass,
+  sidebarNavRowBaseClass,
+  'font-medium text-foreground/80',
+  sidebarNavIdleHoverClass,
+)
 
 function onInstallApp() {
   toast.message('Установить приложение', {
@@ -33,13 +48,28 @@ function onInstallApp() {
       class="flex h-16 shrink-0 flex-row items-center gap-0 p-0 px-4"
     >
       <div class="flex w-full min-w-0 items-center gap-3">
-        <Iva360Logo class="min-w-0" />
+        <Iva360Logo class="min-w-0" :is-admin="isAdminRoute" />
       </div>
     </SidebarHeader>
 
     <SidebarContent class="gap-0">
-      <AppSidebarNav v-if="!isAdminMode" />
-      <AppSidebarNav v-else :menu-config="adminNavMenuConfig" />
+      <div v-if="isAdminRoute" class="px-3 pt-3">
+        <NuxtLink
+          :to="DEFAULT_USER_ROUTE"
+          :class="adminBackLinkClass"
+        >
+          <HugeIcon
+            :icon="ArrowTurnBackwardIcon"
+            :size="20"
+            class="size-5 shrink-0 text-foreground/80"
+          />
+          <span class="min-w-0 whitespace-normal text-left leading-tight">
+            Вернуться назад
+          </span>
+        </NuxtLink>
+      </div>
+      <AppSidebarNav v-if="!isAdminRoute" />
+      <AppSidebarNavLegacy v-else :menu-config="adminNavMenuConfig" />
     </SidebarContent>
 
     <SidebarFooter class="shrink-0 gap-2 p-2">

@@ -61,7 +61,7 @@ const introText = computed(() =>
                 : 'text-foreground hover:bg-muted/60',
             )"
           >
-            {{ isAdminRoute ? 'Управление пользователями' : 'Сотрудники' }}
+            Управление пользователями
           </span>
           <span
             aria-hidden="true"
@@ -81,7 +81,7 @@ const introText = computed(() =>
                 : 'text-foreground hover:bg-muted/60',
             )"
           >
-            {{ isAdminRoute ? 'Управление подписками' : 'Подписки' }}
+            Управление подписками
           </span>
           <span
             aria-hidden="true"

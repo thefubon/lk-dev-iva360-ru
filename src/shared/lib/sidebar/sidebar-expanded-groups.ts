@@ -1,20 +1,35 @@
 export const SIDEBAR_EXPANDED_GROUPS_STORAGE_KEY = 'iva360:sidebar-expanded-groups'
 
 export type SidebarNavEntryForOpenSections = {
-  type: 'item' | 'divider'
+  type: 'item' | 'divider' | 'section'
   key: string
   children?: unknown[]
   expandable?: boolean
+  items?: SidebarNavEntryForOpenSections[]
 }
 
 function isExpandableMenuItem(item: SidebarNavEntryForOpenSections): boolean {
   return item.type === 'item' && Boolean(item.children?.length || item.expandable)
 }
 
+function flattenOpenSectionEntries(
+  config: SidebarNavEntryForOpenSections[],
+): SidebarNavEntryForOpenSections[] {
+  const out: SidebarNavEntryForOpenSections[] = []
+  for (const entry of config) {
+    if (entry.type === 'section') {
+      out.push(...flattenOpenSectionEntries(entry.items ?? []))
+      continue
+    }
+    out.push(entry)
+  }
+  return out
+}
+
 /** Stable `key` values from nav config (e.g. `admin-integrations`, `meetings`). */
 export function collectExpandableMenuKeys(config: SidebarNavEntryForOpenSections[]): string[] {
   const keys: string[] = []
-  for (const entry of config) {
+  for (const entry of flattenOpenSectionEntries(config)) {
     if (!isExpandableMenuItem(entry)) continue
     keys.push(entry.key)
   }

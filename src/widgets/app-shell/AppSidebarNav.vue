@@ -1,29 +1,35 @@
 <script setup lang="ts">
-import { ArrowUpRight, ChevronDown } from 'lucide-vue-next'
-import { computed, onMounted, ref, toValue, watch, type MaybeRefOrGetter } from 'vue'
-import { collectMenuHrefs, getActiveHref } from './app-sidebar-nav-active'
+import { ArrowUpRight03Icon } from '@hugeicons/core-free-icons'
+import { ChevronDown, ChevronUp } from 'lucide-vue-next'
+import { computed, onBeforeMount, ref, watch } from 'vue'
+import type { IconArray } from '@hugeicons/vue'
 import {
+  isSidebarNavSubDivider,
   navMenuConfig,
   type SidebarNavEntry,
   type SidebarNavMenuItem,
   type SidebarNavSubItem,
 } from './app-sidebar-nav.config'
-import { productIconUrls } from './app-sidebar-nav-product-icons'
+import { collectMenuHrefs, getActiveHref } from './app-sidebar-nav-active'
 import {
   productNavChevronClass,
-  productNavRowClass,
-  productNavSubLinkClass,
-  productNavSubLinkIndicatorClass,
-  productNavSubTreeGuideClass,
+  productNavLinkColorClass,
+  productNavToggleRowClass,
+  sidebarNavActiveBackgroundClass,
+  sidebarNavIdleHoverClass,
+  sidebarNavLabelHoverClass,
   sidebarNavRowBaseClass,
+  sidebarNavRowGroupClass,
+  sidebarNavRowHeightClass,
+  sidebarNavSubItemBaseClass,
 } from './app-sidebar-nav-product-surface'
+import ProductIcon from './ProductIcon.vue'
 import {
   applySavedOpenSections,
   loadSidebarExpandedGroups,
   persistSidebarOpenSections,
 } from '@lib/sidebar/sidebar-expanded-groups'
 import { cn } from '@lib/utils'
-import { SidebarSeparator, useSidebar } from '@/shared/ui/sidebar'
 
 const props = withDefaults(defineProps<{
   menuConfig?: SidebarNavEntry[]
@@ -31,131 +37,165 @@ const props = withDefaults(defineProps<{
   menuConfig: () => navMenuConfig,
 })
 
-function isNavLinkItem(entry: SidebarNavEntry): entry is SidebarNavMenuItem {
-  return entry.type === 'item'
+const route = useRoute()
+const hrefs = computed(() => collectMenuHrefs(props.menuConfig))
+const activeHref = computed(() => getActiveHref(route.path, hrefs.value))
+
+function defaultOpenSections(config: SidebarNavEntry[]): Record<string, boolean> {
+  const state: Record<string, boolean> = {}
+  for (const entry of config) {
+    if (entry.type !== 'section') continue
+    for (const item of entry.items) {
+      if (!isExpandable(item)) continue
+      if (item.defaultOpen) {
+        state[item.key] = true
+      }
+    }
+  }
+  return state
+}
+
+const openSections = ref<Record<string, boolean>>(defaultOpenSections(props.menuConfig))
+const isHydrated = ref(false)
+
+const externalLinkArrowIcon = ArrowUpRight03Icon as IconArray
+
+function menuItemHugeIcon(item: SidebarNavMenuItem): IconArray | undefined {
+  const { icon } = item
+  return icon != null && Array.isArray(icon) ? icon : undefined
+}
+
+function subItemHugeIcon(sub: SidebarNavSubItem): IconArray | undefined {
+  const { icon } = sub
+  return icon != null && Array.isArray(icon) ? icon : undefined
+}
+
+function isHrefActive(href: string | undefined): boolean {
+  if (!href?.trim() || !activeHref.value) return false
+  return href.trim() === activeHref.value
+}
+
+function isSubItemActive(sub: SidebarNavSubItem): boolean {
+  return Boolean(sub.href && !sub.disabled && isHrefActive(sub.href))
+}
+
+function isMenuItemActive(item: SidebarNavMenuItem): boolean {
+  return Boolean(item.href && !item.disabled && isHrefActive(item.href))
+}
+
+function isExpandableGroupActive(item: SidebarNavMenuItem): boolean {
+  if (isMenuItemActive(item)) return true
+  return Boolean(item.children?.some(sub => !isSidebarNavSubDivider(sub) && isSubItemActive(sub)))
+}
+
+function isExpandableToggleActive(item: SidebarNavMenuItem): boolean {
+  return isExpandableGroupActive(item) && !openSections.value[item.key]
+}
+
+function navLinkColorClass(active: boolean): string {
+  return active
+    ? cn(sidebarNavActiveBackgroundClass, 'font-medium text-foreground')
+    : cn('font-medium text-foreground/80', sidebarNavIdleHoverClass)
+}
+
+function navLabelClass(active: boolean): string {
+  return cn(
+    'min-w-0 wrap-break-word font-medium',
+    active ? 'text-foreground' : 'text-foreground/80',
+  )
+}
+
+const navIconClass = cn('shrink-0 text-foreground/80')
+
+const expandableToggleTextClass = 'text-foreground/80'
+
+function expandableChevronClass(item: SidebarNavMenuItem): string {
+  const chevronColorClass = item.productIcon
+    ? productNavChevronClass(item.productIcon)
+    : 'text-input'
+  return cn('size-4 shrink-0', chevronColorClass)
+}
+
+/** px-2.5 + иконка родителя + gap-1.5 — левый край подменю совпадает с началом текста родителя. */
+function subMenuLinkPlClass(item: SidebarNavMenuItem) {
+  if (item.productIcon) {
+    return 'pl-[calc(0.625rem+1.5rem+0.375rem)]'
+  }
+  return 'pl-[calc(0.625rem+1.25rem+0.375rem)]'
 }
 
 function isExpandable(item: SidebarNavMenuItem): boolean {
   return Boolean(item.children?.length || item.expandable)
 }
 
-function defaultOpenSections(config: SidebarNavEntry[]): Record<string, boolean> {
-  const state: Record<string, boolean> = {}
-  for (const entry of config) {
-    if (!isNavLinkItem(entry) || !isExpandable(entry)) continue
-    state[entry.key] = Boolean(entry.defaultOpen)
-  }
-  return state
-}
-
-function mergeInitialOpenWithActive(
-  base: Record<string, boolean>,
-  active: string | null,
-  config: SidebarNavEntry[],
-): Record<string, boolean> {
-  const next = { ...base }
-  for (const entry of config) {
-    if (!isNavLinkItem(entry) || !entry.children?.length) continue
-    const childMatch = entry.children.some(
-      c => !c.disabled && Boolean(c.href) && c.href === active,
-    )
-    const parentMatch = Boolean(
-      entry.href && !entry.disabled && entry.href === active,
-    )
-    if (childMatch || parentMatch) {
-      next[entry.key] = true
-    }
-  }
-  return next
-}
-
-function isExpandableGroupActive(
-  item: SidebarNavMenuItem,
-  activeHref: MaybeRefOrGetter<string | null>,
-) {
-  const active = toValue(activeHref)
-  if (!active) return false
-  if (item.href && !item.disabled && item.href === active) return true
-  return Boolean(
-    item.children?.some(
-      c => !c.disabled && Boolean(c.href) && c.href === active,
-    ),
-  )
-}
-
-function rowClass(item: SidebarNavMenuItem, active: string | null) {
-  const groupActive = isExpandableGroupActive(item, active)
-  const rowActive = Boolean(
-    item.href && !item.disabled && item.href === active,
-  )
-  return cn(
-    sidebarNavRowBaseClass,
-    groupActive || rowActive
-      ? 'bg-muted/75 font-medium text-foreground'
-      : 'text-foreground/80 hover:bg-muted/75 hover:text-foreground-hover',
-  )
-}
-
-function navRowClass(item: SidebarNavMenuItem, activeHref: MaybeRefOrGetter<string | null>) {
-  const active = toValue(activeHref)
+function externalMenuItemRowClass(item: SidebarNavMenuItem): string {
   if (item.productIcon) {
-    const groupActive = isExpandableGroupActive(item, active)
-    const rowActive = Boolean(
-      item.href && !item.disabled && item.href === active,
+    return cn(
+      sidebarNavRowGroupClass,
+      sidebarNavRowHeightClass,
+      sidebarNavRowBaseClass,
+      'gap-1.5',
+      productNavLinkColorClass(item.productIcon, { active: false, external: true }),
     )
-    return productNavRowClass(item.productIcon, {
-      active: groupActive || rowActive,
-    })
   }
-  return rowClass(item, active)
+
+  return cn(navLinkRowClass, navLinkColorClass(false))
 }
 
-function subItemIsActive(sub: SidebarNavSubItem, activeHref: MaybeRefOrGetter<string | null>) {
-  const active = toValue(activeHref)
-  return Boolean(
-    sub.href && !sub.disabled && sub.href === active,
+function externalMenuItemLabelClass(item: SidebarNavMenuItem): string {
+  if (item.productIcon) {
+    return cn(
+      'min-w-0 whitespace-normal wrap-break-word text-left leading-tight',
+      sidebarNavLabelHoverClass,
+    )
+  }
+
+  return cn(
+    'min-w-0 whitespace-normal wrap-break-word text-left leading-tight',
+    navLabelClass(false),
   )
 }
 
-const route = useRoute()
-const { isMobile, setOpenMobile } = useSidebar()
-
-const hrefs = computed(() => collectMenuHrefs(props.menuConfig))
-const activeHref = computed(() => getActiveHref(route.path, hrefs.value))
-
-function navEntryAriaCurrent(entry: SidebarNavMenuItem): 'page' | undefined {
-  if (!entry.href || entry.disabled) return undefined
-  return entry.href === activeHref.value ? 'page' : undefined
-}
-
-const openSections = ref<Record<string, boolean>>({})
-const isHydrated = ref(false)
-const animReady = ref(false)
-
-function closeMobileSidebar() {
-  if (isMobile.value) setOpenMobile(false)
+function externalLinkArrowClass(_item: SidebarNavMenuItem): string {
+  return cn(
+    'size-4 shrink-0 opacity-0 translate-x-1 group-hover:opacity-100 group-hover:translate-x-0 text-foreground',
+  )
 }
 
 function toggleSection(key: string) {
   openSections.value = {
     ...openSections.value,
-    [key]: !openSections.value[key],
+    [key]: key in openSections.value ? !openSections.value[key] : true,
   }
 }
 
-onMounted(() => {
+function ensureActiveSectionsOpen() {
+  const next = { ...openSections.value }
+  for (const entry of props.menuConfig) {
+    if (entry.type !== 'section') continue
+    for (const item of entry.items) {
+      if (!isExpandable(item)) continue
+      if (isExpandableGroupActive(item)) {
+        next[item.key] = true
+      }
+    }
+  }
+  openSections.value = next
+}
+
+function hydrateOpenSectionsFromStorage() {
   const defaults = defaultOpenSections(props.menuConfig)
   const saved = loadSidebarExpandedGroups()
-  const withSaved = applySavedOpenSections(defaults, saved, props.menuConfig)
-  openSections.value = mergeInitialOpenWithActive(
-    withSaved,
-    activeHref.value,
-    props.menuConfig,
-  )
+  openSections.value = applySavedOpenSections(defaults, saved, props.menuConfig)
+  ensureActiveSectionsOpen()
+}
+
+ensureActiveSectionsOpen()
+
+onBeforeMount(() => {
+  if (!import.meta.client) return
+  hydrateOpenSectionsFromStorage()
   isHydrated.value = true
-  requestAnimationFrame(() => {
-    animReady.value = true
-  })
 })
 
 watch(
@@ -167,311 +207,265 @@ watch(
   { deep: true },
 )
 
-watch(activeHref, (href) => {
-  if (!isHydrated.value) return
-  for (const entry of props.menuConfig) {
-    if (!isNavLinkItem(entry) || !entry.children?.length) continue
-    const childMatch = entry.children.some(
-      c => !c.disabled && Boolean(c.href) && c.href === href,
-    )
-    const parentMatch = Boolean(entry.href && !entry.disabled && entry.href === href)
-    if (childMatch || parentMatch) {
-      openSections.value = { ...openSections.value, [entry.key]: true }
-    }
+watch(activeHref, ensureActiveSectionsOpen)
+
+function expandableToggleRowClass(item: SidebarNavMenuItem): string {
+  const toggleActive = isExpandableToggleActive(item)
+
+  if (item.productIcon) {
+    return productNavToggleRowClass(item.productIcon, {
+      active: toggleActive,
+    })
   }
-})
+
+  return cn(
+    sidebarNavRowGroupClass,
+    sidebarNavRowHeightClass,
+    sidebarNavRowBaseClass,
+    'gap-1.5 font-medium',
+    expandableToggleTextClass,
+    toggleActive ? sidebarNavActiveBackgroundClass : sidebarNavIdleHoverClass,
+  )
+}
+
+const navLinkRowClass = cn(
+  sidebarNavRowGroupClass,
+  sidebarNavRowHeightClass,
+  sidebarNavRowBaseClass,
+  'justify-between font-medium',
+)
 </script>
 
 <template>
-  <div
-    :class="cn(
-      'flex min-h-0 flex-1 flex-col gap-2 p-3',
-      !isHydrated && 'pointer-events-none opacity-0',
-    )"
-  >
-    <nav class="flex flex-col gap-1.5" aria-label="Основное меню">
+  <div class="flex min-h-0 flex-1 flex-col px-4 py-4">
+    <nav class="flex flex-col space-y-4" aria-label="Основное меню">
       <template v-for="entry in menuConfig" :key="entry.key">
         <div
-          v-if="entry.type === 'divider'"
-          class="flex w-full shrink-0 flex-col py-2"
+          v-if="entry.type === 'section'"
+          class="flex flex-col space-y-1"
         >
-          <SidebarSeparator class="bg-border mx-0 h-px w-full shrink-0" />
-        </div>
-
-        <template v-else>
-          <!-- Раскрывающийся пункт: корень раздела — ссылка, шеврон — только раскрытие -->
-          <div v-if="isExpandable(entry)">
-            <div
-              v-if="entry.href && !entry.disabled && entry.children?.length"
-              :class="cn(entry.productIcon && 'group', navRowClass(entry, activeHref), 'gap-1')"
-            >
-              <NuxtLink
-                :to="entry.href"
-                class="flex min-w-0 flex-1 items-center gap-2 rounded-sm py-0.5 text-left text-sm font-medium outline-none transition-colors focus-visible:ring-2 focus-visible:ring-ring focus-visible:ring-offset-2 focus-visible:ring-offset-background"
-                :aria-current="entry.href === activeHref ? 'page' : undefined"
-                @click="closeMobileSidebar"
-              >
-                <span class="flex size-7 shrink-0 items-center justify-center">
-                  <img
-                    v-if="entry.productIcon"
-                    :src="productIconUrls[entry.productIcon]"
-                    alt=""
-                    draggable="false"
-                    class="size-7 object-contain select-none"
-                    aria-hidden="true"
-                  >
-                  <component
-                    :is="entry.icon"
-                    v-else-if="entry.icon"
-                    class="size-5 shrink-0"
-                  />
-                </span>
-                <span class="min-w-0 flex-1 whitespace-normal wrap-break-word text-left leading-tight">{{ entry.title }}</span>
-              </NuxtLink>
+          <p
+            v-if="entry.title"
+            class="px-2.5 text-xs font-normal text-text-placeholder"
+          >
+            {{ entry.title }}
+          </p>
+          <template v-for="item in entry.items" :key="item.key">
+            <div v-if="isExpandable(item)">
               <button
                 type="button"
-                class="text-secondary/50 hover:text-foreground -mr-0.5 shrink-0 rounded-sm p-1 transition-colors"
-                :aria-expanded="Boolean(openSections[entry.key])"
-                :aria-label="`Подменю: ${entry.title}`"
-                @click.stop="toggleSection(entry.key)"
+                :class="expandableToggleRowClass(item)"
+                :aria-expanded="Boolean(openSections[item.key])"
+                :aria-label="`Подменю: ${item.title}`"
+                @click="toggleSection(item.key)"
               >
-                <ChevronDown
+                <ProductIcon
+                  v-if="item.productIcon"
+                  :icon="item.productIcon"
+                  variant="default"
+                  class="size-6"
+                />
+                <HugeIcon
+                  v-else-if="menuItemHugeIcon(item)"
+                  :icon="menuItemHugeIcon(item)!"
+                  :size="20"
+                  :class="cn('size-5 shrink-0', expandableToggleTextClass)"
+                />
+                <span
                   :class="cn(
-                    'size-4 shrink-0 transition-colors duration-200',
-                    animReady && 'transition-transform duration-200',
-                    openSections[entry.key] && 'rotate-180',
-                    entry.productIcon
-                      ? productNavChevronClass(
-                          entry.productIcon,
-                          isExpandableGroupActive(entry, activeHref),
-                        )
-                      : 'text-secondary/50',
+                    'min-w-0 flex-1 whitespace-normal text-left leading-tight font-medium',
+                    expandableToggleTextClass,
                   )"
+                >
+                  {{ item.title }}
+                </span>
+                <ChevronUp
+                  v-if="openSections[item.key]"
+                  :class="expandableChevronClass(item)"
+                  aria-hidden="true"
+                />
+                <ChevronDown
+                  v-else
+                  :class="expandableChevronClass(item)"
+                  aria-hidden="true"
                 />
               </button>
-            </div>
-            <button
-              v-else
-              type="button"
-              :class="cn(entry.productIcon && 'group', navRowClass(entry, activeHref))"
-              :aria-expanded="Boolean(openSections[entry.key])"
-              @click="toggleSection(entry.key)"
-            >
-              <span class="flex size-7 shrink-0 items-center justify-center">
-                <img
-                  v-if="entry.productIcon"
-                  :src="productIconUrls[entry.productIcon]"
-                  alt=""
-                  draggable="false"
-                  class="size-7 object-contain select-none"
-                  aria-hidden="true"
-                >
-                <component
-                  :is="entry.icon"
-                  v-else-if="entry.icon"
-                  class="size-5 shrink-0"
-                />
-              </span>
-              <span class="min-w-0 flex-1 whitespace-normal wrap-break-word text-left leading-tight">{{ entry.title }}</span>
-              <ChevronDown
-                :class="cn(
-                  'size-4 shrink-0 transition-colors duration-200',
-                  animReady && 'transition-transform duration-200',
-                  openSections[entry.key] && 'rotate-180',
-                  entry.productIcon
-                    ? productNavChevronClass(
-                        entry.productIcon,
-                        isExpandableGroupActive(entry, activeHref),
-                      )
-                    : 'text-secondary/50',
-                )"
-              />
-            </button>
 
-            <div
-              v-if="openSections[entry.key] && entry.children?.length"
-              class="relative mt-1"
-            >
-              <!-- Сетка как у кнопки: px-2.5 + (size-7 | size-5) + gap-2; линия — по центру иконки -->
               <div
-                :class="cn(
-                  'pointer-events-none absolute inset-y-0.5 w-px -translate-x-1/2 rounded-none',
-                  entry.productIcon
-                    ? productNavSubTreeGuideClass(entry.productIcon)
-                    : 'bg-border',
-                  entry.productIcon
-                    ? 'left-[calc(0.625rem+0.875rem+1px)]'
-                    : 'left-[calc(0.625rem+0.625rem+1px)]',
-                )"
-                aria-hidden="true"
-              />
-              <div
-                :class="cn(
-                  'flex flex-col space-y-1 pr-2.5',
-                  entry.productIcon
-                    ? 'pl-[calc(0.625rem+1.75rem+0.5rem-0.625rem)]'
-                    : 'pl-[calc(0.625rem+1.25rem+0.5rem-0.625rem)]',
-                )"
+                v-if="openSections[item.key] && item.children?.length"
+                class="mt-1"
               >
-                <template v-for="sub in entry.children" :key="`${entry.key}-${sub.title}`">
-                  <NuxtLink
-                    v-if="!sub.disabled && sub.href"
-                    :to="sub.href"
-                    class="relative block rounded-sm py-1.5 text-sm wrap-break-word whitespace-normal leading-tight transition-colors"
-                    :class="
-                      entry.productIcon
-                        ? productNavSubLinkClass(entry.productIcon, {
-                            active: subItemIsActive(sub, activeHref),
-                          })
-                        : subItemIsActive(sub, activeHref)
-                          ? 'font-medium text-primary'
-                          : 'text-foreground hover:text-primary'
-                    "
-                    :aria-current="subItemIsActive(sub, activeHref) ? 'page' : undefined"
-                    @click="closeMobileSidebar"
+                <div class="flex flex-col space-y-1">
+                  <template
+                    v-for="(sub, index) in item.children"
+                    :key="isSidebarNavSubDivider(sub) ? sub.key : `${item.key}-sub-${index}`"
                   >
-                    <span
-                      v-if="subItemIsActive(sub, activeHref)"
+                    <div
+                      v-if="isSidebarNavSubDivider(sub)"
+                      :class="cn('py-1', subMenuLinkPlClass(item))"
+                      role="separator"
+                    >
+                      <div class="h-px w-full bg-border" />
+                    </div>
+                    <NuxtLink
+                      v-else-if="!sub.disabled && sub.href"
+                      :to="sub.href"
                       :class="cn(
-                        'pointer-events-none absolute inset-y-0 w-0.5 shrink-0 -translate-x-1/2',
-                        entry.productIcon
-                          ? productNavSubLinkIndicatorClass(entry.productIcon)
-                          : 'bg-primary',
-                        entry.productIcon
-                          ? 'left-[calc(1.5rem-(0.625rem+1.75rem+0.5rem-0.625rem)+1px)]'
-                          : 'left-[calc(1.25rem-(0.625rem+1.25rem+0.5rem-0.625rem)+1px)]',
+                        sidebarNavSubItemBaseClass,
+                        'flex w-full min-w-0 shrink-0 items-center justify-between px-2.5',
+                        subMenuLinkPlClass(item),
+                        navLinkColorClass(isSubItemActive(sub)),
                       )"
-                      aria-hidden="true"
-                    />
-                    <span
-                      :class="cn(
-                        'block min-w-0 wrap-break-word',
-                        entry.productIcon ? 'pl-2.5' : 'pl-[18px]',
-                      )"
-                    >{{ sub.title }}</span>
-                  </NuxtLink>
-                  <a
-                    v-else-if="!sub.disabled && sub.externalUrl && !sub.href"
-                    :href="sub.externalUrl"
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    class="relative block rounded-sm py-1.5 text-sm wrap-break-word whitespace-normal leading-tight transition-colors text-foreground/80 hover:text-foreground-hover"
-                    @click="closeMobileSidebar"
-                  >
-                    <span
-                      :class="cn(
-                        'block min-w-0 wrap-break-word',
-                        entry.productIcon ? 'pl-2.5' : 'pl-[18px]',
-                      )"
-                    >{{ sub.title }}</span>
-                  </a>
-                  <span
-                    v-else
-                    class="text-muted-foreground cursor-not-allowed rounded-sm py-1.5 text-sm wrap-break-word whitespace-normal leading-tight opacity-60"
-                  >
-                    <span
-                      :class="cn(
-                        'block min-w-0 wrap-break-word',
-                        entry.productIcon ? 'pl-2.5' : 'pl-[18px]',
-                      )"
-                    >{{ sub.title }}</span>
-                  </span>
-                </template>
+                      :aria-current="isSubItemActive(sub) ? 'page' : undefined"
+                    >
+                      <span class="flex min-w-0 items-center gap-2 wrap-break-word">
+                        <HugeIcon
+                          v-if="subItemHugeIcon(sub)"
+                          :icon="subItemHugeIcon(sub)!"
+                          :size="20"
+                          :class="navIconClass"
+                        />
+                        <component
+                          :is="sub.icon"
+                          v-else-if="sub.icon"
+                          :class="cn('size-5 shrink-0', navIconClass)"
+                          aria-hidden="true"
+                        />
+                        <span :class="navLabelClass(isSubItemActive(sub))">
+                          {{ sub.title }}
+                        </span>
+                      </span>
+                    </NuxtLink>
+                  </template>
+                </div>
               </div>
             </div>
-          </div>
 
-          <!-- Внешняя ссылка -->
-          <a
-            v-else-if="entry.externalUrl && !entry.disabled"
-            :href="entry.externalUrl"
-            target="_blank"
-            rel="noopener noreferrer"
-            :class="cn('group', navRowClass(entry, activeHref))"
-            @click="closeMobileSidebar"
-          >
-            <span class="flex size-7 shrink-0 items-center justify-center">
-              <img
-                v-if="entry.productIcon"
-                :src="productIconUrls[entry.productIcon]"
-                alt=""
-                draggable="false"
-                class="size-7 object-contain select-none"
-                aria-hidden="true"
-              >
-              <component
-                :is="entry.icon"
-                v-else-if="entry.icon"
-                class="size-5 shrink-0"
+            <a
+              v-else-if="item.externalUrl && !item.disabled"
+              :href="item.externalUrl"
+              target="_blank"
+              rel="noopener noreferrer"
+              :class="externalMenuItemRowClass(item)"
+            >
+              <ProductIcon
+                v-if="item.productIcon"
+                :icon="item.productIcon"
+                variant="default"
+                class="size-6"
               />
-            </span>
-            <span class="flex min-w-0 flex-1 items-center gap-1.5 text-left">
-              <span class="whitespace-normal wrap-break-word leading-tight">{{ entry.title }}</span>
-              <ArrowUpRight
+              <HugeIcon
+                v-else-if="menuItemHugeIcon(item)"
+                :icon="menuItemHugeIcon(item)!"
+                :size="20"
+                :class="navIconClass"
+              />
+              <span
                 :class="cn(
-                  'size-4 shrink-0 transition-colors duration-200',
-                  entry.productIcon
-                    ? productNavChevronClass(
-                        entry.productIcon,
-                        isExpandableGroupActive(entry, activeHref),
-                      )
-                    : 'text-secondary/50 group-hover:text-primary',
+                  'min-w-0 flex-1 text-left',
+                  externalMenuItemLabelClass(item),
                 )"
-                aria-hidden="true"
-              />
-            </span>
-          </a>
-
-          <!-- Внутренний маршрут -->
-          <NuxtLink
-            v-else-if="entry.href && !entry.disabled"
-            :to="entry.href"
-            :class="navRowClass(entry, activeHref)"
-            :aria-current="navEntryAriaCurrent(entry)"
-            @click="closeMobileSidebar"
-          >
-            <span class="flex size-7 shrink-0 items-center justify-center">
-              <img
-                v-if="entry.productIcon"
-                :src="productIconUrls[entry.productIcon]"
-                alt=""
-                draggable="false"
-                class="size-7 object-contain select-none"
-                aria-hidden="true"
               >
-              <component
-                :is="entry.icon"
-                v-else-if="entry.icon"
-                class="size-5 shrink-0"
+                {{ item.title }}
+              </span>
+              <HugeIcon
+                :icon="externalLinkArrowIcon"
+                :size="16"
+                :class="externalLinkArrowClass(item)"
+                aria-hidden="true"
               />
-            </span>
-            <span class="min-w-0 flex-1 whitespace-normal wrap-break-word text-left leading-tight">{{ entry.title }}</span>
-          </NuxtLink>
+            </a>
 
-          <!-- Неактивная строка -->
+            <NuxtLink
+              v-else-if="item.href && !item.disabled"
+              :to="item.href"
+              :class="cn(
+                navLinkRowClass,
+                navLinkColorClass(isMenuItemActive(item)),
+              )"
+              :aria-current="isMenuItemActive(item) ? 'page' : undefined"
+            >
+              <span class="flex min-w-0 items-center gap-2">
+                <HugeIcon
+                  v-if="menuItemHugeIcon(item)"
+                  :icon="menuItemHugeIcon(item)!"
+                  :size="20"
+                  :class="navIconClass"
+                />
+                <span
+                  :class="cn(
+                    'min-w-0 whitespace-normal wrap-break-word text-left leading-tight',
+                    navLabelClass(isMenuItemActive(item)),
+                  )"
+                >
+                  {{ item.title }}
+                </span>
+              </span>
+            </NuxtLink>
+          </template>
+        </div>
+
+        <a
+          v-else-if="entry.type === 'item' && entry.externalUrl && !entry.disabled"
+          :href="entry.externalUrl"
+          target="_blank"
+          rel="noopener noreferrer"
+          :class="externalMenuItemRowClass(entry)"
+        >
+          <ProductIcon
+            v-if="entry.productIcon"
+            :icon="entry.productIcon"
+            variant="default"
+            class="size-6"
+          />
+          <HugeIcon
+            v-else-if="menuItemHugeIcon(entry)"
+            :icon="menuItemHugeIcon(entry)!"
+            :size="20"
+            :class="navIconClass"
+          />
           <span
-            v-else
-            :class="cn(sidebarNavRowBaseClass, 'cursor-not-allowed text-foreground/80 opacity-60')"
-            :title="entry.tooltip"
+            :class="cn(
+              'min-w-0 flex-1 text-left',
+              externalMenuItemLabelClass(entry),
+            )"
           >
-            <span class="flex size-7 shrink-0 items-center justify-center">
-              <img
-                v-if="entry.productIcon"
-                :src="productIconUrls[entry.productIcon]"
-                alt=""
-                draggable="false"
-                class="size-7 object-contain select-none opacity-90"
-                aria-hidden="true"
-              >
-              <component
-                :is="entry.icon"
-                v-else-if="entry.icon"
-                class="size-5 shrink-0"
-              />
-            </span>
-            <span class="min-w-0 flex-1 whitespace-normal wrap-break-word leading-tight">{{ entry.title }}</span>
+            {{ entry.title }}
           </span>
-        </template>
+          <HugeIcon
+            :icon="externalLinkArrowIcon"
+            :size="16"
+            :class="externalLinkArrowClass(entry)"
+            aria-hidden="true"
+          />
+        </a>
+
+        <NuxtLink
+          v-else-if="entry.type === 'item' && entry.href && !entry.disabled"
+          :to="entry.href"
+          :class="cn(
+            navLinkRowClass,
+            navLinkColorClass(isMenuItemActive(entry)),
+          )"
+          :aria-current="isMenuItemActive(entry) ? 'page' : undefined"
+        >
+          <span class="flex min-w-0 items-center gap-2">
+            <HugeIcon
+              v-if="menuItemHugeIcon(entry)"
+              :icon="menuItemHugeIcon(entry)!"
+              :size="20"
+              :class="navIconClass"
+            />
+            <span
+              :class="cn(
+                'min-w-0 whitespace-normal wrap-break-word text-left leading-tight',
+                navLabelClass(isMenuItemActive(entry)),
+              )"
+            >
+              {{ entry.title }}
+            </span>
+          </span>
+        </NuxtLink>
       </template>
     </nav>
   </div>

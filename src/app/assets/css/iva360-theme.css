@@ -219,11 +219,11 @@
   --mail-border: oklch(0.900 0.058 230.911);
   --mail-text: oklch(0.293 0.066 242.909);
 
-  /* Drive & Documents */
-  --drive-primary: oklch(0.643 0.245 16.501);
-  --drive-secondary: oklch(0.969 0.015 12.422);
-  --drive-border: oklch(0.892 0.058 9.078);
-  --drive-text: oklch(0.270 0.105 12.296);
+  /* Drive & Documents (periwinkle blue, hue 250° — between Mail & Broadcasts) */
+  --drive-primary: oklch(0.655 0.184 250.0);
+  --drive-secondary: oklch(0.973 0.013 250.0);
+  --drive-border: oklch(0.891 0.059 250.0);
+  --drive-text: oklch(0.287 0.079 250.0);
 
   /* Board */
   --board-primary: oklch(0.797 0.164 83.110);

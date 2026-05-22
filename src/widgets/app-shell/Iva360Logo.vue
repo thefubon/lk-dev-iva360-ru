@@ -4,6 +4,7 @@ import logoSrc from '@app/assets/img/logo.svg'
 
 const props = defineProps<{
   class?: string
+  isAdmin?: boolean
 }>()
 </script>
 
@@ -27,7 +28,7 @@ const props = defineProps<{
         Панель
       </p>
       <p class="text-sm font-medium leading-[1.1] text-foreground">
-        управления
+        {{ props.isAdmin ? 'Администратора' : 'управления' }}
       </p>
     </div>
   </div>

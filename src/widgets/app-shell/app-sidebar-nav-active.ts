@@ -1,4 +1,8 @@
-import type { SidebarNavEntry } from './app-sidebar-nav.config'
+import {
+  isSidebarNavSubDivider,
+  type SidebarNavEntry,
+  type SidebarNavMenuItem,
+} from './app-sidebar-nav.config'
 
 /** Нормализует pathname из vue-router для сопоставления с пунктами меню. */
 export function normalizeMenuPathname(pathname: string | undefined | null): string {
@@ -9,20 +13,33 @@ export function normalizeMenuPathname(pathname: string | undefined | null): stri
   return p
 }
 
+function collectItemHrefs(item: SidebarNavMenuItem): string[] {
+  const out: string[] = []
+  if (item.children?.length) {
+    for (const c of item.children) {
+      if (isSidebarNavSubDivider(c)) continue
+      const h = c.href?.trim()
+      if (!c.disabled && h) out.push(h)
+    }
+  } else {
+    const h = item.href?.trim()
+    if (h && !item.disabled) out.push(h)
+  }
+  return out
+}
+
 /** Собирает внутренние href: у пунктов с подменю — только дочерние `href` (корень раздела — отдельный подпункт, если нужен в меню). */
 export function collectMenuHrefs(items: SidebarNavEntry[]): string[] {
   const out: string[] = []
   for (const entry of items) {
-    if (entry.type !== 'item') continue
-    if (entry.children?.length) {
-      for (const c of entry.children) {
-        const h = c.href?.trim()
-        if (!c.disabled && h) out.push(h)
+    if (entry.type === 'section') {
+      for (const item of entry.items) {
+        out.push(...collectItemHrefs(item))
       }
-    } else {
-      const h = entry.href?.trim()
-      if (h && !entry.disabled) out.push(h)
+      continue
     }
+    if (entry.type !== 'item') continue
+    out.push(...collectItemHrefs(entry))
   }
   return out
 }

@@ -28,14 +28,19 @@ describe('getActiveHref', () => {
   })
 
   it('does not treat / as prefix of other routes', () => {
-    expect(getActiveHref('/company', hrefs)).toBe('/company')
+    expect(getActiveHref('/admin', hrefs)).toBe('/admin')
     expect(getActiveHref('/users/employees', hrefs)).toBe('/users/employees')
     expect(getActiveHref('/users/products', hrefs)).toBe('/users/products')
+    expect(getActiveHref('/meetings/webinars', hrefs)).toBe('/meetings/webinars')
+    expect(getActiveHref('/integration/ldap', hrefs)).toBe('/integration/ldap')
+    expect(getActiveHref('/integration/sso', hrefs)).toBe('/integration/sso')
+    expect(getActiveHref('/integration/api', hrefs)).toBe('/integration/api')
     expect(getActiveHref('/billing/products', hrefs)).toBe('/billing/products')
     expect(getActiveHref('/billing/orders', hrefs)).toBe('/billing/orders')
-    expect(getActiveHref('/meetings/webinars', hrefs)).toBe('/meetings/webinars')
-    expect(getActiveHref('/integration/api', hrefs)).toBe('/integration/api')
-    expect(getActiveHref('/integration', hrefs)).toBe('/integration')
+    expect(getActiveHref('/company', hrefs)).toBe('/company')
+    expect(getActiveHref('/statistics', hrefs)).toBe('/statistics')
+    expect(getActiveHref('/roadmap', hrefs)).toBe('/roadmap')
+    expect(getActiveHref('/platform-docs', hrefs)).toBe('/platform-docs')
   })
 
   it('picks longest matching prefix', () => {

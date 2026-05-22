@@ -1,8 +1,9 @@
 <script setup lang="ts">
 import type { HTMLAttributes } from "vue"
-import { PanelLeft } from "lucide-vue-next"
+import { PanelLeftOpenIcon } from '@hugeicons/core-free-icons'
 import { cn } from '@lib/utils'
 import { Button } from '@/shared/ui/button'
+import { HugeIcon } from '@/shared/ui/icon'
 import { useSidebar } from "./utils"
 
 const props = defineProps<{
@@ -18,10 +19,10 @@ const { toggleSidebar } = useSidebar()
     data-slot="sidebar-trigger"
     variant="ghost"
     size="icon"
-    :class="cn(props.class)"
+    :class="cn('[&_svg]:size-5!', props.class)"
     @click="toggleSidebar"
   >
-    <PanelLeft />
+    <HugeIcon :icon="PanelLeftOpenIcon" :size="20" class="shrink-0" />
     <span class="sr-only">Toggle Sidebar</span>
   </Button>
 </template>

@@ -95,11 +95,8 @@ import { Switch } from '@/shared/ui/switch'
 import { Tooltip, TooltipContent, TooltipTrigger } from '@/shared/ui/tooltip'
 import { cn } from '@lib/utils'
 import EmployeeTagsCell from '@/pages/users/ui/employee-tags-cell.vue'
-import {
-  productIconUrls,
-  productIconUrlsDefault,
-  type ProductIconKey,
-} from '@/widgets/app-shell/app-sidebar-nav-product-icons'
+import ProductIcon from '@/widgets/app-shell/ProductIcon.vue'
+import type { ProductIconKey } from '@/widgets/app-shell/app-sidebar-nav-product-icons'
 import { AdminPageSection } from '@/widgets/admin-page-section'
 
 const { isAdminRoute, appPath, isAppPathActive } = useAppRoute()
@@ -2459,7 +2456,7 @@ watch(bulkMassPlaceholderOpen, (open) => {
                   : 'text-foreground hover:bg-muted/60',
               )"
             >
-              {{ isAdminRoute ? 'Управление пользователями' : 'Сотрудники' }}
+              Управление пользователями
             </span>
             <span
               aria-hidden="true"
@@ -2479,7 +2476,7 @@ watch(bulkMassPlaceholderOpen, (open) => {
                   : 'text-foreground hover:bg-muted/60',
               )"
             >
-              {{ isAdminRoute ? 'Управление подписками' : 'Подписки' }}
+              Управление подписками
             </span>
             <span
               aria-hidden="true"
@@ -2703,19 +2700,11 @@ watch(bulkMassPlaceholderOpen, (open) => {
                             :model-value="employeeSubscriptionProductFilters[row.product].filterActive"
                             @update:model-value="(v) => { employeeSubscriptionProductFilters[row.product].filterActive = !!v }"
                           />
-                          <span
-                            class="flex size-8 shrink-0 items-center justify-center rounded-md text-white"
-                            :class="subscriptionProductChipClass[row.product]"
-                          >
-                            <img
-                              :src="productIconUrls[row.iconKey]"
-                              :alt="''"
-                              class="size-7 object-contain select-none"
-                              loading="lazy"
-                              decoding="async"
-                              draggable="false"
-                            />
-                          </span>
+                          <ProductIcon
+                            :icon="row.iconKey"
+                            variant="default"
+                            class="size-6 shrink-0"
+                          />
                           <span class="text-foreground min-w-0 text-xs font-medium leading-tight">{{ row.label }}</span>
                         </div>
                         <div class="flex shrink-0 items-center gap-1.5">
@@ -2998,12 +2987,11 @@ watch(bulkMassPlaceholderOpen, (open) => {
                                     class="box-border flex size-[26px] shrink-0 cursor-default items-center justify-center overflow-hidden rounded-full outline-none"
                                     :class="subscriptionProductChipClass[item.product]"
                                   >
-                                    <img
-                                      :src="productIconUrls[item.product]"
-                                      alt=""
-                                      class="size-6 rounded-full object-contain select-none"
-                                      draggable="false"
-                                    >
+                                    <ProductIcon
+                                      :icon="item.product"
+                                      :tile="false"
+                                      class="size-6 rounded-full"
+                                    />
                                   </button>
                                 </TooltipTrigger>
                                 <TooltipContent variant="light" side="top" align="center" class="max-w-xs">
@@ -3228,12 +3216,11 @@ watch(bulkMassPlaceholderOpen, (open) => {
                             class="box-border flex size-[26px] shrink-0 cursor-default items-center justify-center overflow-hidden rounded-sm outline-none"
                             :class="subscriptionProductChipClass[item.product]"
                           >
-                            <img
-                              :src="productIconUrls[item.product]"
-                              alt=""
-                              class="size-6 rounded-sm object-contain select-none"
-                              draggable="false"
-                            >
+                            <ProductIcon
+                              :icon="item.product"
+                              :tile="false"
+                              class="size-6 rounded-sm"
+                            />
                           </button>
                         </TooltipTrigger>
                         <TooltipContent variant="light" side="top" align="center" class="max-w-xs">
@@ -3489,19 +3476,13 @@ watch(bulkMassPlaceholderOpen, (open) => {
                       </template>
                       <template v-else>
                         <span class="flex min-w-0 items-center gap-0.5 overflow-hidden">
-                          <span
+                          <ProductIcon
                             v-for="row in addUserSelectedPlansPreview"
                             :key="row.code"
-                            class="relative box-border flex size-6 shrink-0 items-center justify-center overflow-hidden rounded-sm"
-                            :class="addUserPlanIconBgClass[row.icon]"
-                          >
-                            <img
-                              :src="productIconUrlsDefault[row.icon]"
-                              alt=""
-                              class="m-auto size-5 object-contain"
-                              loading="lazy"
-                            >
-                          </span>
+                            :icon="row.icon"
+                            variant="default"
+                            class="size-6 shrink-0"
+                          />
                           <span
                             v-if="addUserSelectedPlansOverflow > 0"
                             class="shrink-0 pl-0.5 text-xs text-muted-foreground tabular-nums"
@@ -3537,17 +3518,11 @@ watch(bulkMassPlaceholderOpen, (open) => {
                           class="flex min-h-11 cursor-pointer items-center gap-3 rounded-md px-2 py-1.5 text-left hover:bg-muted"
                         >
                           <span class="flex min-w-0 flex-1 items-center gap-2">
-                            <span
-                              class="relative box-border flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-sm"
-                              :class="addUserPlanIconBgClass[row.icon]"
-                            >
-                              <img
-                                :src="productIconUrlsDefault[row.icon]"
-                                alt=""
-                                class="m-auto size-5 object-contain"
-                                loading="lazy"
-                              >
-                            </span>
+                            <ProductIcon
+                              :icon="row.icon"
+                              variant="default"
+                              class="size-6 shrink-0"
+                            />
                             <span class="truncate text-sm font-medium text-foreground">{{ row.code }}</span>
                           </span>
                           <Checkbox
@@ -3748,12 +3723,11 @@ watch(bulkMassPlaceholderOpen, (open) => {
                       class="relative box-border flex size-7 shrink-0 items-center justify-center overflow-hidden rounded-sm"
                       :class="addUserPlanIconBgClass[row.icon]"
                     >
-                      <img
-                        :src="productIconUrlsDefault[row.icon]"
-                        alt=""
-                        class="m-auto size-5 object-contain"
-                        loading="lazy"
-                      >
+                      <ProductIcon
+                        :icon="row.icon"
+                        variant="default"
+                        class="size-5"
+                      />
                     </span>
                     <span class="truncate text-sm font-medium text-foreground">{{ row.code }}</span>
                   </span>
