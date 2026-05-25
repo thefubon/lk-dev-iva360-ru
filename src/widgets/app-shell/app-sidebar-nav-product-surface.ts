@@ -6,7 +6,7 @@ export const sidebarNavRowHeightClass = 'h-9 min-h-9 max-h-9'
 
 /** Строка навигации: иконка продукта size-8 по центру. */
 export const sidebarNavRowBaseClass =
-  'flex h-9 min-h-9 max-h-9 w-full min-w-0 shrink-0 cursor-pointer items-center gap-2 rounded-sm px-2.5 text-left text-sm font-medium transition-colors duration-300'
+  'relative flex h-9 min-h-9 max-h-9 w-full min-w-0 shrink-0 cursor-pointer items-center gap-2 rounded-sm px-2.5 text-left text-sm font-medium transition-colors duration-300'
 
 /** Подпункт подменю: единый размер и начертание для всех состояний. */
 export const sidebarNavSubItemBaseClass =
@@ -35,12 +35,25 @@ const productNavIdleTextClass = 'font-medium text-foreground/80'
 /** Фон активной строки навигации (только `<a>` / NuxtLink). */
 export const sidebarNavActiveBackgroundClass = 'bg-muted'
 
+/** Горизонтальный отступ контейнера навигации. */
+export const sidebarNavHorizontalPaddingClass = 'px-4'
+
+/** Синяя «таблетка» слева — индикатор активного пункта (6px от края строки, вне фона). */
+export const sidebarNavActiveIndicatorClass =
+  "before:pointer-events-none before:absolute before:top-0.5 before:bottom-0.5 before:-left-[9px] before:w-[4px] before:rounded-full before:bg-primary before:content-['']"
+
+/** Активная строка: фон + левый индикатор. */
+export const sidebarNavActiveStateClass = cn(
+  sidebarNavActiveBackgroundClass,
+  sidebarNavActiveIndicatorClass,
+)
+
 /** Hover для неактивных строк навигации (ссылки и переключатели подменю). */
 export const sidebarNavIdleHoverClass = 'hover:bg-muted'
 
 const productNavActiveClass = cn(
   'font-medium text-foreground',
-  sidebarNavActiveBackgroundClass,
+  sidebarNavActiveStateClass,
 )
 
 type ProductSurfaceEntry = {
@@ -88,7 +101,7 @@ export function productNavToggleRowClass(
     'gap-1.5',
     sidebarNavRowGroupClass,
     productNavIdleTextClass,
-    opts?.active ? sidebarNavActiveBackgroundClass : sidebarNavIdleHoverClass,
+    opts?.active ? sidebarNavActiveStateClass : sidebarNavIdleHoverClass,
   )
 }
 

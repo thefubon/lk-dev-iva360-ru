@@ -15,7 +15,8 @@ import {
   productNavChevronClass,
   productNavLinkColorClass,
   productNavToggleRowClass,
-  sidebarNavActiveBackgroundClass,
+  sidebarNavActiveStateClass,
+  sidebarNavHorizontalPaddingClass,
   sidebarNavIdleHoverClass,
   sidebarNavLabelHoverClass,
   sidebarNavLucideIconClass,
@@ -101,7 +102,7 @@ function navRowIsActive(item: SidebarNavMenuItem, active: string | null) {
 
 function rowColorClass(item: SidebarNavMenuItem, active: string | null) {
   return navRowIsActive(item, active)
-    ? cn('font-medium text-foreground', sidebarNavActiveBackgroundClass)
+    ? cn('font-medium text-foreground', sidebarNavActiveStateClass)
     : cn('font-medium text-foreground/80', sidebarNavIdleHoverClass)
 }
 
@@ -170,7 +171,7 @@ function navToggleRowClass(item: SidebarNavMenuItem, activeHref: MaybeRefOrGette
     sidebarNavRowHeightClass,
     sidebarNavRowBaseClass,
     'font-medium text-foreground/80',
-    toggleActive ? sidebarNavActiveBackgroundClass : sidebarNavIdleHoverClass,
+    toggleActive ? sidebarNavActiveStateClass : sidebarNavIdleHoverClass,
   )
 }
 
@@ -298,7 +299,8 @@ watch(activeHref, (href) => {
 <template>
   <div
     :class="cn(
-      'flex min-h-0 flex-1 flex-col gap-2 p-3',
+      'flex min-h-0 flex-1 flex-col gap-2 py-3',
+      sidebarNavHorizontalPaddingClass,
       !isHydrated && 'pointer-events-none opacity-0',
     )"
   >
@@ -435,7 +437,7 @@ watch(activeHref, (href) => {
                       sidebarNavSubItemBaseClass,
                       sidebarNavRowGroupClass,
                       subItemIsActive(sub, activeHref)
-                        ? cn('font-medium text-foreground', sidebarNavActiveBackgroundClass)
+                        ? cn('font-medium text-foreground', sidebarNavActiveStateClass)
                         : cn('font-medium text-foreground/80', sidebarNavIdleHoverClass),
                     )"
                     :aria-current="subItemIsActive(sub, activeHref) ? 'page' : undefined"

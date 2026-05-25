@@ -50,7 +50,7 @@ export default defineNuxtConfig({
     layouts: 'app/layouts',
     middleware: 'app/middleware',
     plugins: 'app/plugins',
-    public: '../public',
+    public: 'public',
   },
 
   alias: {

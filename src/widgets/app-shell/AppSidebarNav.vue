@@ -15,7 +15,8 @@ import {
   productNavChevronClass,
   productNavLinkColorClass,
   productNavToggleRowClass,
-  sidebarNavActiveBackgroundClass,
+  sidebarNavActiveStateClass,
+  sidebarNavHorizontalPaddingClass,
   sidebarNavIdleHoverClass,
   sidebarNavLabelHoverClass,
   sidebarNavRowBaseClass,
@@ -94,7 +95,7 @@ function isExpandableToggleActive(item: SidebarNavMenuItem): boolean {
 
 function navLinkColorClass(active: boolean): string {
   return active
-    ? cn(sidebarNavActiveBackgroundClass, 'font-medium text-foreground')
+    ? cn(sidebarNavActiveStateClass, 'font-medium text-foreground')
     : cn('font-medium text-foreground/80', sidebarNavIdleHoverClass)
 }
 
@@ -224,7 +225,7 @@ function expandableToggleRowClass(item: SidebarNavMenuItem): string {
     sidebarNavRowBaseClass,
     'gap-1.5 font-medium',
     expandableToggleTextClass,
-    toggleActive ? sidebarNavActiveBackgroundClass : sidebarNavIdleHoverClass,
+    toggleActive ? sidebarNavActiveStateClass : sidebarNavIdleHoverClass,
   )
 }
 
@@ -237,7 +238,7 @@ const navLinkRowClass = cn(
 </script>
 
 <template>
-  <div class="flex min-h-0 flex-1 flex-col px-4 py-4">
+  <div :class="cn('flex min-h-0 flex-1 flex-col py-4', sidebarNavHorizontalPaddingClass)">
     <nav class="flex flex-col space-y-4" aria-label="Основное меню">
       <template v-for="entry in menuConfig" :key="entry.key">
         <div
