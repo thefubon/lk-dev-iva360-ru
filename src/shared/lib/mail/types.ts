@@ -11,8 +11,8 @@ export const MAIL_NAV_SECTIONS = ['domains', 'mailboxes', 'settings'] as const
 export type MailNavSection = (typeof MAIL_NAV_SECTIONS)[number]
 
 export const MAIL_NAV_SECTION_LABELS: Record<MailNavSection, string> = {
-  domains: 'Управление доменами',
-  mailboxes: 'Управление почтовыми ящиками',
+  domains: 'Почтовые домены',
+  mailboxes: 'Почтовые ящики',
   settings: 'Дополнительные настройки',
 }
 

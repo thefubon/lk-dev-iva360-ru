@@ -21,12 +21,16 @@ import {
   sidebarNavRowGroupClass,
 } from './app-sidebar-nav-product-surface'
 import { adminNavMenuConfig } from './app-sidebar-admin-nav.config'
+import { navMenuConfig } from './app-sidebar-nav.config'
 import AppSidebarNav from './AppSidebarNav.vue'
-import AppSidebarNavLegacy from './_archive/sidebar-nav/AppSidebarNav.vue'
 import Iva360Logo from './Iva360Logo.vue'
 
 const { isMobile, state } = useSidebar()
 const { isAdminRoute } = useAppRoute()
+
+const sidebarMenuConfig = computed(() =>
+  isAdminRoute.value ? adminNavMenuConfig : navMenuConfig,
+)
 
 const adminBackLinkClass = cn(
   sidebarNavRowGroupClass,
@@ -68,8 +72,7 @@ function onInstallApp() {
           </span>
         </NuxtLink>
       </div>
-      <AppSidebarNav v-if="!isAdminRoute" />
-      <AppSidebarNavLegacy v-else :menu-config="adminNavMenuConfig" />
+      <AppSidebarNav :menu-config="sidebarMenuConfig" />
     </SidebarContent>
 
     <SidebarFooter class="shrink-0 gap-2 p-2">

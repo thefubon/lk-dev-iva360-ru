@@ -117,12 +117,9 @@ function expandableChevronClass(item: SidebarNavMenuItem): string {
   return cn('size-4 shrink-0', chevronColorClass)
 }
 
-/** px-2.5 + иконка родителя + gap-1.5 — левый край подменю совпадает с началом текста родителя. */
-function subMenuLinkPlClass(item: SidebarNavMenuItem) {
-  if (item.productIcon) {
-    return 'pl-[calc(0.625rem+1.5rem+0.375rem)]'
-  }
-  return 'pl-[calc(0.625rem+1.25rem+0.375rem)]'
+/** Единый отступ субменю слева — 28px. */
+function subMenuLinkPlClass(_item: SidebarNavMenuItem) {
+  return 'pl-7'
 }
 
 function isExpandable(item: SidebarNavMenuItem): boolean {
